@@ -1,0 +1,8 @@
+.roomodes
+repomix-output.xml
+.roorules
+state.json
+dist/
+*.exe
+Compiler/
+*.zip

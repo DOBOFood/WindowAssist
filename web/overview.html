@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WindowAssist Overview</title>
+  <link rel="stylesheet" href="css/overview.css">
+</head>
+<body oncontextmenu="return false;">
+  <div id="backdrop" onclick="onBackdropClick(event)">
+    <div id="grid-container" class="resizable-container" onclick="onContainerClick(event)">
+      <button id="settings-button" class="settings-btn" title="Settings" data-i18n-title="overviewSettingsBtn" onclick="onSettingsClick(event)">
+        <svg viewBox="0 0 24 24">
+          <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.485.485 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+        </svg>
+      </button>
+
+      <!-- Главная разметка: 3 колонки для строгого центрирования сетки столов внутри контейнера -->
+      <div class="overview-main-layout">
+        <!-- Левая колонка: Карман внутри div -->
+        <div class="pocket-sidebar">
+          <div id="pocket-section" class="pocket-section">
+            <div class="pocket-header">
+              <span data-i18n="overviewPocketHeader">Pocket</span>
+            </div>
+            <div id="pocket-app-list" class="pocket-app-list">
+              <!-- Элементы кармана -->
+            </div>
+          </div>
+          <div class="pocket-divider"></div>
+        </div>
+
+        <!-- Центральная колонка: Прямоугольники рабочих столов (строго по центру экрана) -->
+        <div class="workspaces-center-wrapper">
+          <div id="workspaces-grid">
+            <!-- Столы рендерятся динамически -->
+          </div>
+        </div>
+
+        <!-- Правая колонка: Симметричный балансир для идеального центрирования -->
+        <div class="overview-balancer" aria-hidden="true"></div>
+      </div>
+
+      <div id="resize-handle" class="resize-handle"></div>
+    </div>
+  </div>
+
+  <!-- Плавающий Preview-попап для кармана -->
+  <div id="pocket-preview-popup" class="pocket-preview-popup">
+    <img id="pocket-preview-img" alt="Preview" />
+  </div>
+
+  <script src="js/i18n.js"></script>
+  <script>
+    let currentLang = 'en';
+
+    function t(key, params) {
+      if (!key) return '';
+      const dict = (window.I18N && window.I18N[currentLang]) || (window.I18N && window.I18N['en']) || {};
+      let text = (key in dict) ? dict[key] : key;
+      if (params && typeof text === 'string') {
+        for (const p in params) {
+          text = text.replace(new RegExp(`\\{${p}\\}`, 'g'), params[p]);
+        }
+      }
+      return text;
+    }
+
+    function applyTranslations() {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.textContent = t(key);
+      });
+      document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const key = el.getAttribute('data-i18n-title');
+        el.title = t(key);
+      });
+    }
+
+    let isDraggingWindow = false;
+    let previewCache = new Map(); // hwnd -> base64 preview
+    let selectedHwnds = new Set();
+    let currentWorkspacesData = [];
+    let currentPocketData = [];
+    let dragGhostEl = null;
+    let activeDragHwnds = [];
+
+    // Для превью кармана с задержкой 500мс
+    let pocketHoverTimer = null;
+    let hoveredPocketHwnd = null;
+
+    function clearSelection() {
+      if (selectedHwnds.size === 0) return;
+      selectedHwnds.clear();
+      document.querySelectorAll('.app-item.selected').forEach(el => el.classList.remove('selected'));
+      document.querySelectorAll('.pocket-app-item.selected').forEach(el => el.classList.remove('selected'));
+    }
+
+    function toggleAppSelection(hwnd, appItem) {
+      if (selectedHwnds.has(hwnd)) {
+        selectedHwnds.delete(hwnd);
+        appItem.classList.remove('selected');
+      } else {
+        selectedHwnds.add(hwnd);
+        appItem.classList.add('selected');
+      }
+    }
+
+    function onContainerClick(e) {
+      closeContextMenu();
+      if (!e.ctrlKey && !e.metaKey && !e.target.closest('.app-item') && !e.target.closest('.pocket-app-item')) {
+        clearSelection();
+      }
+      if (
+        !e.target.closest('#pocket-section') &&
+        !e.target.closest('#workspaces-grid') &&
+        !e.target.closest('#settings-button') &&
+        !e.target.closest('#app-context-menu') &&
+        !e.target.closest('.resize-handle')
+      ) {
+        sendToAhk({ action: 'CLOSE_OVERVIEW' });
+      }
+    }
+
+    function sendToAhk(obj) {
+      if (window.chrome && window.chrome.webview) {
+        window.chrome.webview.postMessage(JSON.stringify(obj));
+      }
+    }
+
+    window.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+    });
+
+    // Прием состояния и событий от AutoHotkey
+    if (window.chrome && window.chrome.webview) {
+      window.chrome.webview.addEventListener('message', (event) => {
+        let data = event.data;
+        if (typeof data === 'string') {
+          try {
+            data = JSON.parse(data);
+          } catch (e) {
+            console.error('Ошибка парсинга JSON:', e);
+            return;
+          }
+        }
+        if (!data || !data.action) return;
+
+        if (data.action === 'INIT_STATE') {
+          if (data.language) {
+            currentLang = data.language;
+            applyTranslations();
+          }
+          if (data.animDuration != null) {
+            document.documentElement.style.setProperty('--anim-duration', data.animDuration + 'ms');
+          }
+          if (data.colors) {
+            if (data.colors.workspaceBorderHover)
+              document.documentElement.style.setProperty('--col-ws-border', data.colors.workspaceBorderHover);
+            if (data.colors.pocketTheme)
+              document.documentElement.style.setProperty('--col-pocket-theme', data.colors.pocketTheme);
+          }
+          renderWorkspaces(data.workspaces, data.currentWs);
+          renderPocket(data.pocketApps || []);
+        } else if (data.action === 'PREVIEW_RESULT') {
+          if (data.hwnd && data.preview) {
+            previewCache.set(data.hwnd, data.preview);
+            updatePreviewIfHovered(data.hwnd, data.preview);
+            updatePocketPreviewIfHovered(data.hwnd, data.preview);
+          }
+        }
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      applyTranslations();
+      sendToAhk({ action: 'DOM_READY' });
+      loadSavedWidth();
+      setupPocketDragDrop();
+    });
+
+    let hoveredAppHwnd = null;
+
+    function updatePreviewIfHovered(hwnd, previewSrc) {
+      if (hoveredAppHwnd === hwnd) {
+        const previewImg = document.querySelector(`.card-preview-overlay[data-hover-hwnd="${hwnd}"]`);
+        if (previewImg) {
+          previewImg.src = previewSrc;
+          previewImg.classList.add('active');
+        }
+      }
+    }
+
+    function setupPocketDragDrop() {
+      const pocketSection = document.getElementById('pocket-section');
+      if (!pocketSection || pocketSection.dataset.dragInit) return;
+      pocketSection.dataset.dragInit = 'true';
+
+      const handlePocketDragOver = (e) => {
+        e.preventDefault();
+        pocketSection.classList.add('drag-over-pocket');
+      };
+
+      const handlePocketDragLeave = (e) => {
+        if (!pocketSection.contains(e.relatedTarget)) {
+          pocketSection.classList.remove('drag-over-pocket');
+        }
+      };
+
+      const handlePocketDrop = (e) => {
+        e.preventDefault();
+        pocketSection.classList.remove('drag-over-pocket');
+
+        let hwnds = (activeDragHwnds && activeDragHwnds.length) ? [...activeDragHwnds] : [];
+        if (!hwnds.length) {
+          const rawHwnds = e.dataTransfer.getData('application/json');
+          if (rawHwnds) {
+            try { hwnds = JSON.parse(rawHwnds); } catch (_) {}
+          }
+        }
+        if (!hwnds || !hwnds.length) {
+          const raw = e.dataTransfer.getData('text/plain');
+          if (raw) {
+            const h = parseInt(raw, 10);
+            if (!isNaN(h)) hwnds = [h];
+          }
+        }
+
+        if (hwnds && hwnds.length) {
+          sendToAhk({ action: 'ADD_TO_POCKET', hwnds: hwnds, hwnd: hwnds[0] });
+          clearSelection();
+        }
+      };
+
+      pocketSection.addEventListener('dragover', handlePocketDragOver);
+      pocketSection.addEventListener('dragleave', handlePocketDragLeave);
+      pocketSection.addEventListener('drop', handlePocketDrop);
+    }
+
+    function renderPocket(pocketApps) {
+      currentPocketData = pocketApps;
+      setupPocketDragDrop();
+      const listEl = document.getElementById('pocket-app-list');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      if (!pocketApps || pocketApps.length === 0) {
+        const emptyEl = document.createElement('div');
+        emptyEl.className = 'pocket-empty';
+        emptyEl.textContent = t('overviewPocketEmpty');
+        listEl.appendChild(emptyEl);
+        return;
+      }
+
+      pocketApps.forEach((app) => {
+        const item = document.createElement('div');
+        item.className = `pocket-app-item ${selectedHwnds.has(app.hwnd) ? 'selected' : ''}`;
+        item.setAttribute('data-hwnd', app.hwnd);
+        item.title = app.title;
+        item.draggable = true;
+
+        const icon = document.createElement('img');
+        icon.className = 'pocket-app-icon';
+        icon.src = app.icon || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg"/>';
+
+        const title = document.createElement('span');
+        title.className = 'pocket-app-title';
+        title.innerText = app.title;
+
+        item.appendChild(icon);
+        item.appendChild(title);
+
+        // Клик -> Активация окна кармана поверх всех
+        item.addEventListener('click', (e) => {
+          if (e.button === 0) {
+            closeContextMenu();
+            hidePocketPreview();
+            if (e.ctrlKey || e.metaKey) {
+              toggleAppSelection(app.hwnd, item);
+              return;
+            }
+            if (selectedHwnds.size > 0) {
+              clearSelection();
+            }
+            sendToAhk({ action: 'SWITCH_TO_WINDOW', hwnd: app.hwnd });
+          }
+        });
+
+        item.addEventListener('auxclick', (e) => {
+          if (e.button === 1) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeContextMenu();
+            hidePocketPreview();
+            sendToAhk({ action: 'CLOSE_WINDOW_AHK', hwnd: app.hwnd });
+          }
+        });
+
+        // Drag Start / End для перемещения из кармана на рабочий стол
+        item.addEventListener('dragstart', (e) => {
+          closeContextMenu();
+          hidePocketPreview();
+          isDraggingWindow = true;
+
+          if (!selectedHwnds.has(app.hwnd)) {
+            clearSelection();
+            selectedHwnds.add(app.hwnd);
+            item.classList.add('selected');
+          }
+
+          const hwndsArray = Array.from(selectedHwnds);
+          activeDragHwnds = hwndsArray;
+          e.dataTransfer.setData('application/json', JSON.stringify(hwndsArray));
+          e.dataTransfer.setData('text/plain', String(app.hwnd));
+
+          document.querySelectorAll('.pocket-app-item[data-hwnd]').forEach(el => {
+            const h = parseInt(el.getAttribute('data-hwnd'), 10);
+            if (selectedHwnds.has(h)) el.classList.add('dragging');
+          });
+          document.querySelectorAll('.app-item.selected').forEach(el => el.classList.add('dragging'));
+        });
+
+        item.addEventListener('dragend', () => {
+          isDraggingWindow = false;
+          activeDragHwnds = [];
+          document.querySelectorAll('.pocket-app-item.dragging').forEach(el => el.classList.remove('dragging'));
+          document.querySelectorAll('.app-item.dragging').forEach(el => el.classList.remove('dragging'));
+          if (dragGhostEl) {
+            dragGhostEl.remove();
+            dragGhostEl = null;
+          }
+        });
+
+        // ПКМ -> Контекстное меню
+        item.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          hidePocketPreview();
+          showPocketContextMenu(app.hwnd, e.clientX, e.clientY, app.title);
+        });
+
+        // Наведение мыши: показ preview сверху над иконкой через 500мс
+        item.addEventListener('mouseenter', () => {
+          hoveredPocketHwnd = app.hwnd;
+          if (pocketHoverTimer) {
+            clearTimeout(pocketHoverTimer);
+          }
+          pocketHoverTimer = setTimeout(() => {
+            if (hoveredPocketHwnd === app.hwnd) {
+              showPocketPreview(item, app.hwnd);
+            }
+          }, 500);
+        });
+
+        item.addEventListener('mouseleave', () => {
+          if (hoveredPocketHwnd === app.hwnd) {
+            hoveredPocketHwnd = null;
+            if (pocketHoverTimer) {
+              clearTimeout(pocketHoverTimer);
+              pocketHoverTimer = null;
+            }
+            hidePocketPreview();
+          }
+        });
+
+        listEl.appendChild(item);
+      });
+    }
+
+    function showPocketPreview(anchorEl, hwnd) {
+      const popup = document.getElementById('pocket-preview-popup');
+      const img = document.getElementById('pocket-preview-img');
+      if (!popup || !img) return;
+
+      const rect = anchorEl.getBoundingClientRect();
+      const left = Math.max(12, rect.left);
+      const top = Math.max(12, rect.top - 180);
+
+      popup.style.left = `${left}px`;
+      popup.style.top = `${top}px`;
+
+      if (previewCache.has(hwnd)) {
+        img.src = previewCache.get(hwnd);
+        popup.classList.add('visible');
+      } else {
+        img.src = '';
+        sendToAhk({ action: 'GET_PREVIEW', hwnd: hwnd });
+      }
+    }
+
+    function updatePocketPreviewIfHovered(hwnd, previewSrc) {
+      if (hoveredPocketHwnd === hwnd) {
+        const popup = document.getElementById('pocket-preview-popup');
+        const img = document.getElementById('pocket-preview-img');
+        if (popup && img) {
+          img.src = previewSrc;
+          popup.classList.add('visible');
+        }
+      }
+    }
+
+    function hidePocketPreview() {
+      const popup = document.getElementById('pocket-preview-popup');
+      if (popup) {
+        popup.classList.remove('visible');
+      }
+    }
+
+    function showPocketContextMenu(hwnd, clientX, clientY, title) {
+      closeContextMenu();
+
+      const menu = document.createElement('div');
+      menu.id = 'app-context-menu';
+      menu.className = 'app-context-menu jumplist-menu';
+
+      if (title) {
+        const titleEl = document.createElement('div');
+        titleEl.className = 'jumplist-header-title';
+        titleEl.innerText = title;
+        menu.appendChild(titleEl);
+        menu.appendChild(document.createElement('hr'));
+      }
+
+      const actionGroup = document.createElement('div');
+      actionGroup.className = 'menu-group';
+
+      // 1. Активировать
+      const actItem = document.createElement('div');
+      actItem.className = 'menu-item';
+      actItem.innerHTML = `<span class="item-icon">👁</span><span class="item-text">${t('overviewShowOnTop')}</span>`;
+      actItem.onclick = () => {
+        closeContextMenu();
+        sendToAhk({ action: 'SWITCH_TO_WINDOW', hwnd: hwnd });
+      };
+      actionGroup.appendChild(actItem);
+
+      // 2. Убрать из кармана
+      const remItem = document.createElement('div');
+      remItem.className = 'menu-item';
+      remItem.innerHTML = `<span class="item-icon">↩</span><span class="item-text">${t('overviewRemoveFromPocket')}</span>`;
+      remItem.onclick = () => {
+        closeContextMenu();
+        sendToAhk({ action: 'REMOVE_FROM_POCKET', hwnd: hwnd });
+      };
+      actionGroup.appendChild(remItem);
+
+      // Разделитель
+      const hr = document.createElement('hr');
+      actionGroup.appendChild(hr);
+
+      // 3. Закрыть приложение
+      const closeItem = document.createElement('div');
+      closeItem.className = 'menu-item danger';
+      closeItem.innerHTML = `<span class="item-icon">✕</span><span class="item-text">${t('overviewCloseWindow')}</span>`;
+      closeItem.onclick = () => {
+        closeContextMenu();
+        sendToAhk({ action: 'CLOSE_WINDOW_AHK', hwnd: hwnd });
+      };
+      actionGroup.appendChild(closeItem);
+
+      menu.appendChild(actionGroup);
+      document.body.appendChild(menu);
+
+      const rect = menu.getBoundingClientRect();
+      let left = clientX;
+      let top = clientY;
+      if (left + rect.width > window.innerWidth) left = window.innerWidth - rect.width - 12;
+      if (top + rect.height > window.innerHeight) top = window.innerHeight - rect.height - 12;
+      menu.style.left = `${left}px`;
+      menu.style.top = `${top}px`;
+
+      const closeOnClickOutside = (ev) => {
+        if (!menu.contains(ev.target)) {
+          closeContextMenu();
+          window.removeEventListener('click', closeOnClickOutside);
+        }
+      };
+      setTimeout(() => {
+        window.addEventListener('click', closeOnClickOutside);
+      }, 50);
+    }
+
+    function renderWorkspaces(workspaces, currentWs) {
+      currentWorkspacesData = workspaces;
+      const allExistingHwnds = new Set();
+      if (workspaces && Array.isArray(workspaces)) {
+        workspaces.forEach(ws => {
+          if (ws.apps && Array.isArray(ws.apps)) {
+            ws.apps.forEach(a => allExistingHwnds.add(a.hwnd));
+          }
+        });
+      }
+      for (const h of selectedHwnds) {
+        if (!allExistingHwnds.has(h)) selectedHwnds.delete(h);
+      }
+
+      const container = document.getElementById('workspaces-grid');
+      container.innerHTML = '';
+
+      workspaces.forEach((ws) => {
+        const col = document.createElement('div');
+        col.className = 'workspace-column';
+
+        const card = document.createElement('div');
+        card.className = `workspace-card ${ws.id === currentWs ? 'current' : ''}`;
+        card.setAttribute('data-ws-id', ws.id);
+
+        const num = document.createElement('div');
+        num.className = 'ws-number';
+        num.innerText = ws.id;
+        card.appendChild(num);
+
+        const previewImg = document.createElement('img');
+        previewImg.className = 'card-preview-overlay';
+        card.appendChild(previewImg);
+
+        card.addEventListener('click', (e) => {
+          if (e.button === 0) {
+            closeContextMenu();
+            sendToAhk({ action: 'SWITCH_WORKSPACE', targetWs: ws.id });
+          }
+        });
+        card.addEventListener('auxclick', (e) => {
+          if (e.button === 1) {
+            e.preventDefault();
+            sendToAhk({ action: 'DELETE_WORKSPACE', targetWs: ws.id });
+          }
+        });
+
+        card.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          closeContextMenu();
+          sendToAhk({ action: 'DELETE_WORKSPACE', targetWs: ws.id });
+        });
+
+        const handleDragOver = (e) => {
+          e.preventDefault();
+          col.classList.add('drag-over-col');
+        };
+        const handleDragLeave = (e) => {
+          if (!col.contains(e.relatedTarget)) {
+            col.classList.remove('drag-over-col');
+          }
+        };
+        const handleDrop = (e) => {
+          e.preventDefault();
+          col.classList.remove('drag-over-col');
+
+          let hwnds = (activeDragHwnds && activeDragHwnds.length) ? [...activeDragHwnds] : [];
+          if (!hwnds.length) {
+            const rawHwnds = e.dataTransfer.getData('application/json');
+            if (rawHwnds) {
+              try { hwnds = JSON.parse(rawHwnds); } catch (_) {}
+            }
+          }
+          if (!hwnds || !hwnds.length) {
+            const raw = e.dataTransfer.getData('text/plain');
+            if (raw) {
+              const h = parseInt(raw, 10);
+              if (!isNaN(h)) hwnds = [h];
+            }
+          }
+
+          if (hwnds && hwnds.length) {
+            hwnds.forEach(h => {
+              if (currentPocketData.some(p => p.hwnd === h)) {
+                sendToAhk({ action: 'REMOVE_FROM_POCKET', hwnd: h });
+              }
+            });
+            sendToAhk({ action: 'MOVE_WINDOW', hwnds: hwnds, hwnd: hwnds[0], targetWs: ws.id });
+            clearSelection();
+          }
+        };
+
+        col.addEventListener('dragover', handleDragOver);
+        col.addEventListener('dragleave', handleDragLeave);
+        col.addEventListener('drop', handleDrop);
+
+        col.appendChild(card);
+
+        const appList = document.createElement('div');
+        appList.className = 'app-list';
+
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('drop', handleDrop);
+        appList.addEventListener('dragover', handleDragOver);
+        appList.addEventListener('drop', handleDrop);
+
+        if (ws.apps && Array.isArray(ws.apps)) {
+          ws.apps.forEach((app) => {
+            const appItem = document.createElement('div');
+            appItem.className = `app-item ${selectedHwnds.has(app.hwnd) ? 'selected' : ''}`;
+            appItem.draggable = true;
+            appItem.title = app.title;
+
+            const icon = document.createElement('img');
+            icon.className = 'app-icon';
+            icon.src = app.icon || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg"/>';
+
+            const title = document.createElement('span');
+            title.className = 'app-title';
+            title.innerText = app.title;
+
+            appItem.appendChild(icon);
+            appItem.appendChild(title);
+
+            appItem.addEventListener('click', (e) => {
+              if (e.button === 0) {
+                closeContextMenu();
+                if (e.ctrlKey || e.metaKey) {
+                  toggleAppSelection(app.hwnd, appItem);
+                  return;
+                }
+                if (selectedHwnds.size > 0) {
+                  clearSelection();
+                }
+                sendToAhk({ action: 'SWITCH_TO_WINDOW', hwnd: app.hwnd });
+              }
+            });
+            appItem.addEventListener('auxclick', (e) => {
+              if (e.button === 1) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeContextMenu();
+                sendToAhk({ action: 'CLOSE_WINDOW_AHK', hwnd: app.hwnd });
+              }
+            });
+
+            appItem.addEventListener('mouseenter', () => {
+              if (isDraggingWindow) return;
+              hoveredAppHwnd = app.hwnd;
+              previewImg.setAttribute('data-hover-hwnd', app.hwnd);
+
+              if (previewCache.has(app.hwnd)) {
+                previewImg.src = previewCache.get(app.hwnd);
+                previewImg.classList.add('active');
+              } else {
+                sendToAhk({ action: 'GET_PREVIEW', hwnd: app.hwnd });
+              }
+            });
+
+            appItem.addEventListener('mouseleave', () => {
+              if (hoveredAppHwnd === app.hwnd) {
+                hoveredAppHwnd = null;
+                previewImg.removeAttribute('data-hover-hwnd');
+                previewImg.classList.remove('active');
+              }
+            });
+
+            appItem.addEventListener('dragstart', (e) => {
+              closeContextMenu();
+              isDraggingWindow = true;
+              previewImg.classList.remove('active');
+
+              if (!selectedHwnds.has(app.hwnd)) {
+                clearSelection();
+                selectedHwnds.add(app.hwnd);
+                appItem.classList.add('selected');
+              }
+
+              const hwndsArray = Array.from(selectedHwnds);
+              activeDragHwnds = hwndsArray;
+              e.dataTransfer.setData('application/json', JSON.stringify(hwndsArray));
+              e.dataTransfer.setData('text/plain', String(app.hwnd));
+
+              document.querySelectorAll('.app-item.selected').forEach(el => el.classList.add('dragging'));
+
+              if (hwndsArray.length > 1) {
+                if (dragGhostEl) dragGhostEl.remove();
+
+                const ghost = document.createElement('div');
+                ghost.className = 'drag-multi-ghost';
+
+                const badge = document.createElement('div');
+                badge.className = 'ghost-badge';
+                badge.textContent = hwndsArray.length;
+                ghost.appendChild(badge);
+
+                const iconsContainer = document.createElement('div');
+                iconsContainer.className = 'ghost-icons';
+
+                const iconMap = new Map();
+                currentWorkspacesData.forEach(w => {
+                  if (w.apps) {
+                    w.apps.forEach(a => {
+                      if (a.icon) iconMap.set(a.hwnd, a.icon);
+                    });
+                  }
+                });
+
+                hwndsArray.slice(0, 4).forEach(h => {
+                  const gIcon = document.createElement('img');
+                  gIcon.className = 'ghost-icon';
+                  gIcon.src = iconMap.get(h) || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg"/>';
+                  iconsContainer.appendChild(gIcon);
+                });
+
+                ghost.appendChild(iconsContainer);
+                document.body.appendChild(ghost);
+                dragGhostEl = ghost;
+
+                e.dataTransfer.setDragImage(ghost, 20, 20);
+              }
+            });
+
+            appItem.addEventListener('dragend', () => {
+              isDraggingWindow = false;
+              activeDragHwnds = [];
+              document.querySelectorAll('.app-item.dragging').forEach(el => el.classList.remove('dragging'));
+              if (dragGhostEl) {
+                dragGhostEl.remove();
+                dragGhostEl = null;
+              }
+            });
+
+            appItem.addEventListener('contextmenu', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              showCustomContextMenu(app.hwnd, e.clientX, e.clientY, app.title);
+            });
+
+            appList.appendChild(appItem);
+          });
+        }
+
+        col.appendChild(appList);
+        container.appendChild(col);
+      });
+
+      const addCol = document.createElement('div');
+      addCol.className = 'workspace-column';
+      const addCard = document.createElement('div');
+      addCard.className = 'workspace-card add-card';
+      addCard.innerHTML = '<div class="ws-number">+</div>';
+      addCard.addEventListener('click', () => {
+        closeContextMenu();
+        sendToAhk({ action: 'ADD_WORKSPACE' });
+      });
+      addCol.appendChild(addCard);
+      container.appendChild(addCol);
+    }
+
+    function closeContextMenu() {
+      const menu = document.getElementById('app-context-menu');
+      if (menu) menu.remove();
+    }
+
+    function showCustomContextMenu(hwnd, clientX, clientY, title) {
+      closeContextMenu();
+
+      const menu = document.createElement('div');
+      menu.id = 'app-context-menu';
+      menu.className = 'app-context-menu jumplist-menu';
+
+      if (title) {
+        const titleEl = document.createElement('div');
+        titleEl.className = 'jumplist-header-title';
+        titleEl.innerText = title;
+        menu.appendChild(titleEl);
+        menu.appendChild(document.createElement('hr'));
+      }
+
+      const actionGroup = document.createElement('div');
+      actionGroup.className = 'menu-group';
+
+      const maxItem = document.createElement('div');
+      maxItem.className = 'menu-item';
+      maxItem.innerHTML = `<span class="item-icon">🗖</span><span class="item-text">${t('overviewMaximizeRestore')}</span>`;
+      maxItem.onclick = () => {
+        closeContextMenu();
+        sendToAhk({ action: 'MAXIMIZE_WINDOW_AHK', hwnd: hwnd });
+      };
+      actionGroup.appendChild(maxItem);
+
+      const minItem = document.createElement('div');
+      minItem.className = 'menu-item';
+      minItem.innerHTML = `<span class="item-icon">🗕</span><span class="item-text">${t('overviewMinimize')}</span>`;
+      minItem.onclick = () => {
+        closeContextMenu();
+        sendToAhk({ action: 'MINIMIZE_WINDOW_AHK', hwnd: hwnd });
+      };
+      actionGroup.appendChild(minItem);
+
+      const centerItem = document.createElement('div');
+      centerItem.className = 'menu-item';
+      centerItem.innerHTML = `<span class="item-icon">•</span><span class="item-text">${t('overviewResetPos')}</span>`;
+      centerItem.onclick = () => {
+        closeContextMenu();
+        sendToAhk({ action: 'RESET_WINDOW_POS_AHK', hwnd: hwnd });
+      };
+      actionGroup.appendChild(centerItem);
+
+      const hr = document.createElement('hr');
+      actionGroup.appendChild(hr);
+
+      const closeItem = document.createElement('div');
+      closeItem.className = 'menu-item danger';
+      closeItem.innerHTML = `<span class="item-icon">✕</span><span class="item-text">${t('overviewClose')}</span>`;
+      closeItem.onclick = () => {
+        closeContextMenu();
+        sendToAhk({ action: 'CLOSE_WINDOW_AHK', hwnd: hwnd });
+      };
+      actionGroup.appendChild(closeItem);
+
+      menu.appendChild(actionGroup);
+      document.body.appendChild(menu);
+
+      const rect = menu.getBoundingClientRect();
+      let left = clientX;
+      let top = clientY;
+      if (left + rect.width > window.innerWidth) left = window.innerWidth - rect.width - 12;
+      if (top + rect.height > window.innerHeight) top = window.innerHeight - rect.height - 12;
+      menu.style.left = `${left}px`;
+      menu.style.top = `${top}px`;
+
+      const closeOnClickOutside = (ev) => {
+        if (!menu.contains(ev.target)) {
+          closeContextMenu();
+          window.removeEventListener('click', closeOnClickOutside);
+        }
+      };
+      setTimeout(() => {
+        window.addEventListener('click', closeOnClickOutside);
+      }, 50);
+    }
+
+    function onSettingsClick(e) {
+      e.stopPropagation();
+      sendToAhk({ action: 'OPEN_SETTINGS' });
+    }
+
+    function onBackdropClick(e) {
+      closeContextMenu();
+      hidePocketPreview();
+      if (e.target.id === 'backdrop') {
+        sendToAhk({ action: 'CLOSE_OVERVIEW' });
+      }
+    }
+
+    const container = document.getElementById('grid-container');
+    const handle = document.getElementById('resize-handle');
+    let isResizing = false;
+    let startX = 0;
+    let startWidth = 0;
+
+    function loadSavedWidth() {
+      const saved = localStorage.getItem('overview_container_width');
+      if (saved && container) {
+        container.style.width = `${saved}px`;
+      }
+    }
+
+    if (handle) {
+      handle.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startX = e.clientX;
+        startWidth = container.offsetWidth;
+        handle.classList.add('active');
+        e.preventDefault();
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        const currentX = e.clientX;
+        const diffX = (currentX - startX) * 2;
+        let newWidth = Math.round((startWidth + diffX) / 10) * 10;
+        const minW = 400;
+        const maxW = window.innerWidth * 0.95;
+        if (newWidth < minW) newWidth = minW;
+        if (newWidth > maxW) newWidth = maxW;
+        container.style.width = `${newWidth}px`;
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isResizing) {
+          isResizing = false;
+          handle.classList.remove('active');
+          localStorage.setItem('overview_container_width', container.offsetWidth);
+        }
+      });
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hidePocketPreview();
+        const menu = document.getElementById('app-context-menu');
+        if (menu) {
+          menu.remove();
+        } else {
+          sendToAhk({ action: 'CLOSE_OVERVIEW' });
+        }
+      }
+    });
+  </script>
+</body>
+</html>
