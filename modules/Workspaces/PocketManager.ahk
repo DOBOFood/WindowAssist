@@ -11,6 +11,8 @@ class PocketManager {
     static borderHwndToTarget := Map()
     ; Последние известные координаты окон {x, y, w, h}
     static lastCoords := Map()
+    ; Последняя установленная прозрачность окна/рамки
+    static lastAlpha := Map()
     ; Цвет обводки (желтый, по умолчанию "FFD700")
     static borderColor := "FFD700"
     static borderWidth := 3
@@ -51,6 +53,9 @@ class PocketManager {
     static HidePocketWindow(hwnd) {
         if (!hwnd || !WinExist("ahk_id " hwnd))
             return
+        try WinSetTransparent("Off", "ahk_id " hwnd)
+        if this.lastAlpha.Has(hwnd)
+            this.lastAlpha.Delete(hwnd)
         try DllCall("ShowWindowAsync", "ptr", hwnd, "int", 6) ; SW_MINIMIZE
         if this.borderGuis.Has(hwnd) {
             try this.borderGuis[hwnd].Hide()
@@ -148,6 +153,10 @@ class PocketManager {
         } else if (this.currentIndex > this.pocketWindows.Length) {
             this.currentIndex := this.pocketWindows.Length
         }
+
+        try WinSetTransparent("Off", "ahk_id " hwnd)
+        if this.lastAlpha.Has(hwnd)
+            this.lastAlpha.Delete(hwnd)
 
         this.RemoveBorder(hwnd)
         try WinSetAlwaysOnTop(false, "ahk_id " hwnd)
@@ -269,6 +278,13 @@ class PocketManager {
             WinSetAlwaysOnTop(true, "ahk_id " hwnd)
             ForceActivateWindow(hwnd)
         }
+
+        this.lastAlpha[hwnd] := 255
+        try WinSetTransparent("Off", "ahk_id " hwnd)
+        if this.borderGuis.Has(hwnd) {
+            try WinSetTransparent("Off", "ahk_id " this.borderGuis[hwnd].Hwnd)
+        }
+
         this.UpdateBorder(hwnd)
         this.ApplyLayerHierarchy()
     }
@@ -321,6 +337,23 @@ class PocketManager {
         this.ApplyLayerHierarchy()
     }
 
+    ; Обновление прозрачности: 50% если окно не в фокусе, 100% если в фокусе
+    static UpdateTransparency(h) {
+        if (!h || !WinExist("ahk_id " h))
+            return
+        fgHwnd := DllCall("GetForegroundWindow", "ptr")
+        isFocused := (fgHwnd && (fgHwnd == h || IsWindowOrChildOf(fgHwnd, h)))
+        targetAlpha := isFocused ? 255 : 128
+        currAlpha := this.lastAlpha.Has(h) ? this.lastAlpha[h] : 255
+        if (currAlpha != targetAlpha) {
+            this.lastAlpha[h] := targetAlpha
+            try WinSetTransparent(isFocused ? "Off" : targetAlpha, "ahk_id " h)
+            if this.borderGuis.Has(h) {
+                try WinSetTransparent(isFocused ? "Off" : targetAlpha, "ahk_id " this.borderGuis[h].Hwnd)
+            }
+        }
+    }
+
     ; Гарантирует строгую иерархию слоев:
     ; Закрепленные окна -> Окно кармана -> Рамка кармана -> OSD -> Overview
     static ApplyLayerHierarchy() {
@@ -345,12 +378,15 @@ class PocketManager {
         ; 3. Опускаем все закрепленные окна ПОД окно кармана
         this.LowerPinnedWindowsUnderPocket()
 
-        ; 4. Если активно окно OSD (уведомление рабочего стола), поднимаем его выше кармана
+        ; 4. Обновляем прозрачность
+        this.UpdateTransparency(pocketHwnd)
+
+        ; 5. Если активно окно OSD (уведомление рабочего стола), поднимаем его выше кармана
         if (osdGlobalGui && DllCall("user32\IsWindow", "ptr", osdGlobalGui.Hwnd, "int") && DllCall("user32\IsWindowVisible", "ptr", osdGlobalGui.Hwnd, "int")) {
             DllCall("user32\SetWindowPos", "ptr", osdGlobalGui.Hwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0013)
         }
 
-        ; 5. Оверлей Overview всегда должен быть на самом верху
+        ; 6. Оверлей Overview всегда должен быть на самом верху
         if (OverviewController.isOpen) {
             OverviewController.EnsureTopmost()
         }
@@ -508,6 +544,9 @@ class PocketManager {
             this.lastCoords[hwnd] := {x: wx, y: wy, w: ww, h: wh}
             ; Рамка поверх окна кармана
             DllCall("user32\SetWindowPos", "ptr", g.Hwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0013) ; SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
+            if (this.lastAlpha.Has(hwnd) && this.lastAlpha[hwnd] != 255) {
+                try WinSetTransparent(this.lastAlpha[hwnd], "ahk_id " g.Hwnd)
+            }
         }
     }
 
@@ -521,6 +560,8 @@ class PocketManager {
         }
         if this.lastCoords.Has(hwnd)
             this.lastCoords.Delete(hwnd)
+        if this.lastAlpha.Has(hwnd)
+            this.lastAlpha.Delete(hwnd)
     }
 
     ; Фоновый сторожевой таймер: обновляет геометрию только при необходимости без кражи фокуса
@@ -544,6 +585,8 @@ class PocketManager {
                     }
                     ; Поддерживаем рамку на актуальных координатах
                     this.UpdateBorder(h)
+                    ; Поддерживаем актуальную прозрачность в зависимости от фокуса
+                    this.UpdateTransparency(h)
                 } else {
                     if this.borderGuis.Has(h) {
                         try this.borderGuis[h].Hide()
