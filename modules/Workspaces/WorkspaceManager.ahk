@@ -285,7 +285,7 @@ GetTopActiveWindow(rootHwnd) {
 IsUserInitiatedActivation() {
     global lastTaskbarClickTime
 
-    if (A_TickCount - lastTaskbarClickTime < 2500)
+    if (A_TickCount - lastTaskbarClickTime < 3000)
         return true
 
     if GetKeyState("Alt", "P") || GetKeyState("NumLock", "P") || GetKeyState("LWin", "P") || GetKeyState("RWin", "P")
@@ -405,18 +405,16 @@ HandleWindowActivation(rootHwnd, isCreated := false, originalHwnd := 0) {
     targetWs  := info.ws
     curWs     := currentWorkspaces[targetMon]
 
-    isTaskbarClick := (A_TickCount - lastTaskbarClickTime < 2500)
+    isTaskbarClick := (A_TickCount - lastTaskbarClickTime < 3000)
 
     if (curWs != targetWs) {
-        if (info.isOffscreen) {
-            SafeDesktopFocus()
-            return
-        }
         if (!IsUserInitiatedActivation()) {
             SafeDesktopFocus()
             return
         }
-        SwitchWorkspace(targetMon, targetWs, rootHwnd)
+        targetToActivate := (originalHwnd && WinExist("ahk_id " originalHwnd)) ? originalHwnd : rootHwnd
+        CrossWorkspaceAltTab.RecordActiveWindow(targetToActivate)
+        SwitchWorkspace(targetMon, targetWs, targetToActivate)
         return
     }
 
@@ -424,8 +422,12 @@ HandleWindowActivation(rootHwnd, isCreated := false, originalHwnd := 0) {
         try {
             ; Используем асинхронный вызов для проверки состояния окна, чтобы не зависнуть
             style := WinGetStyle("ahk_id " rootHwnd)
-            if (style & 0x20000000) ; WS_MINIMIZE
-                DllCall("ShowWindowAsync", "ptr", rootHwnd, "int", 9) ; SW_RESTORE
+            if (style & 0x20000000) { ; WS_MINIMIZE
+                if (info.isMax)
+                    DllCall("ShowWindowAsync", "ptr", rootHwnd, "int", 3) ; SW_MAXIMIZE
+                else
+                    DllCall("ShowWindowAsync", "ptr", rootHwnd, "int", 9) ; SW_RESTORE
+            }
         }
         if (info.isOffscreen) {
             SetWindowVisibility(rootHwnd, true)
@@ -704,8 +706,14 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
         if (preferredHwnd && WinExist("ahk_id " preferredHwnd)) {
             try {
                 style := WinGetStyle("ahk_id " preferredHwnd)
-                if (style & 0x20000000) ; WS_MINIMIZE
-                    DllCall("ShowWindowAsync", "ptr", preferredHwnd, "int", 9) ; SW_RESTORE
+                if (style & 0x20000000) { ; WS_MINIMIZE
+                    rootH := GetRootManagedWindow(preferredHwnd)
+                    isMax := (rootH && wsWindows.Has(rootH)) ? wsWindows[rootH].isMax : false
+                    if (isMax)
+                        DllCall("ShowWindowAsync", "ptr", preferredHwnd, "int", 3) ; SW_MAXIMIZE
+                    else
+                        DllCall("ShowWindowAsync", "ptr", preferredHwnd, "int", 9) ; SW_RESTORE
+                }
             }
             target := GetTopActiveWindow(preferredHwnd)
             if (!OverviewController.isOpen)
