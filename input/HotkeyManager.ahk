@@ -30,8 +30,8 @@ class ActionCatalog {
             "workspace_move_9", () => MoveActiveWindowAndFollow(9),
             "workspace_prev", () => (HotkeyManager.IsMovePrefixActive() ? MoveActiveWindowDeltaAndFollow(-1) : SwitchWorkspaceDelta(-1)),
             "workspace_next", () => (HotkeyManager.IsMovePrefixActive() ? MoveActiveWindowDeltaAndFollow(1) : SwitchWorkspaceDelta(1)),
-            "window_close", () => (WinClose("A")),
-            "window_minimize", () => (WinMinimize("A")),
+            "window_close", CloseActiveWindow,
+            "window_minimize", MinimizeActiveWindow,
             "window_pin", () => ToggleFloatingWindows(),
             "layer_peeker", () => LayerPeeker.OnClick(),
             "window_mouse_modifier", Map("type", "prefix"),
@@ -49,6 +49,14 @@ class ActionCatalog {
             this.Init()
         return this.catalog.Has(actionKey) ? this.catalog[actionKey] : 0
     }
+}
+
+CloseActiveWindow() {
+    try WinClose("A")
+}
+
+MinimizeActiveWindow() {
+    try WinMinimize("A")
 }
 
 class HotkeyManager {
