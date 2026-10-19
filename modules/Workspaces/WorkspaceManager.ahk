@@ -282,29 +282,15 @@ GetTopActiveWindow(rootHwnd) {
     return rootHwnd
 }
 
-IsUserInitiatedActivation() {
+IsTaskbarActivation() {
     global lastTaskbarClickTime
-
-    if (A_TickCount - lastTaskbarClickTime < 3000)
-        return true
-
-    if GetKeyState("Alt", "P") || GetKeyState("NumLock", "P") || GetKeyState("LWin", "P") || GetKeyState("RWin", "P")
-        return true
-    if InStr("Tab,LAlt,RAlt,Enter,Space,LButton", A_PriorKey)
+    if (lastTaskbarClickTime > 0 && (A_TickCount - lastTaskbarClickTime < 750))
         return true
 
     CoordMode("Mouse", "Screen")
     MouseGetPos(&mX, &mY, &mHwnd)
-    if mHwnd {
-        if IsTaskbarOrPreviewHwnd(mHwnd, mX, mY)
-            return true
-    }
-
-    fgHwnd := DllCall("GetForegroundWindow", "ptr")
-    if fgHwnd {
-        fgClass := ""
-        try fgClass := StrLower(WinGetClass("ahk_id " fgHwnd))
-        if InStr(",multitaskingviewframe,xamlexplorerhostislandwindow,taskswitcherwnd,shell_traywnd,startmenuexperiencehost,", "," fgClass ",")
+    if (mHwnd && IsTaskbarOrPreviewHwnd(mHwnd, mX, mY)) {
+        if GetKeyState("LButton", "P")
             return true
     }
 
@@ -327,10 +313,10 @@ IsTaskbarOrPreviewHwnd(hwnd, mX := 0, mY := 0) {
     if (rootClass = "shell_traywnd" || rootClass = "shell_secondarytraywnd")
         return true
 
-    if InStr(",shell_traywnd,shell_secondarytraywnd,mstasklistwclass,tasklistuiwnd,tasklistthumbnailwnd,traynotifywnd,windows.ui.composition.desktopwindowtarget,xamlexplorerhostislandwindow,toplevelwindowforoverflowxamlisland,multitaskingviewframe,taskswitcherwnd,startmenuexperiencehost,", "," childClass ",")
+    if InStr(",shell_traywnd,shell_secondarytraywnd,mstasklistwclass,tasklistuiwnd,tasklistthumbnailwnd,traynotifywnd,windows.ui.composition.desktopwindowtarget,xamlexplorerhostislandwindow,toplevelwindowforoverflowxamlisland,multitaskingviewframe,taskswitcherwnd,", "," childClass ",")
         return true
 
-    if InStr(",tasklistthumbnailwnd,mstasklistwclass,multitaskingviewframe,taskswitcherwnd,startmenuexperiencehost,", "," rootClass ",")
+    if InStr(",tasklistthumbnailwnd,mstasklistwclass,multitaskingviewframe,taskswitcherwnd,", "," rootClass ",")
         return true
 
     procName := ""
@@ -405,18 +391,22 @@ HandleWindowActivation(rootHwnd, isCreated := false, originalHwnd := 0) {
     targetWs  := info.ws
     curWs     := currentWorkspaces[targetMon]
 
-    isTaskbarClick := (A_TickCount - lastTaskbarClickTime < 3000)
+    isTaskbarClick := IsTaskbarActivation()
 
     if (curWs != targetWs) {
-        if (!IsUserInitiatedActivation()) {
-            SafeDesktopFocus()
+        if (!isTaskbarClick) {
+            if !ActivateTopWindowOnWorkspace(targetMon, curWs)
+                SafeDesktopFocus()
             return
         }
+        lastTaskbarClickTime := 0
         targetToActivate := (originalHwnd && WinExist("ahk_id " originalHwnd)) ? originalHwnd : rootHwnd
         CrossWorkspaceAltTab.RecordActiveWindow(targetToActivate)
         SwitchWorkspace(targetMon, targetWs, targetToActivate)
         return
     }
+
+    lastTaskbarClickTime := 0
 
     if (isTaskbarClick) {
         try {
