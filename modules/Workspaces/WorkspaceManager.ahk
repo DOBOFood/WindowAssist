@@ -381,8 +381,10 @@ HandleWindowActivation(rootHwnd, isCreated := false, originalHwnd := 0) {
 
     ; Окна из кармана не привязаны ни к какому конкретному рабочему столу (ws=0)
     ; Их активация никогда не должна инициировать переключение рабочих столов
-    if (PocketManager.IsInPocket(rootHwnd))
+    if (PocketManager.IsInPocket(rootHwnd)) {
+        PocketManager.ApplyLayerHierarchy()
         return
+    }
 
     info := wsWindows[rootHwnd]
 
@@ -454,6 +456,8 @@ HandleWindowActivation(rootHwnd, isCreated := false, originalHwnd := 0) {
     if (fg && IsWindowOrChildOf(fg, rootHwnd)) {
         if (isTaskbarClick && DllCall("GetForegroundWindow", "ptr") != fg)
             ForceActivateWindow(fg)
+        if (PocketManager.GetVisiblePocketWindow())
+            PocketManager.ApplyLayerHierarchy()
         return
     }
 
@@ -467,6 +471,9 @@ HandleWindowActivation(rootHwnd, isCreated := false, originalHwnd := 0) {
     if (fg != targetToActivate) {
         ForceActivateWindow(targetToActivate)
     }
+
+    if (PocketManager.GetVisiblePocketWindow())
+        PocketManager.ApplyLayerHierarchy()
 }
 
 GetOffscreenCoords(hwnd, mon) {
@@ -648,9 +655,8 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
             target := GetTopActiveWindow(preferredHwnd)
             ForceActivateWindow(target)
         }
-        if PocketManager.GetVisiblePocketWindow()
-            PocketManager.LowerPinnedWindowsUnderPocket()
         ShowOSD(targetWs)
+        PocketManager.ApplyLayerHierarchy()
         isSwitchingWorkspace := false
         return
     }
@@ -695,9 +701,6 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
                 AlignWindowToDesktopState(hwnd, false)
         }
 
-        ; Гарантируем, что Overview остается поверх всех окон, включая закрепленные
-        OverviewController.EnsureTopmost()
-
         if (preferredHwnd && WinExist("ahk_id " preferredHwnd)) {
             try {
                 style := WinGetStyle("ahk_id " preferredHwnd)
@@ -711,15 +714,13 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
             SafeDesktopFocus()
         }
 
-        ; Если включено карманное окно, опускаем закрепленные окна под него
-        if PocketManager.GetVisiblePocketWindow()
-            PocketManager.LowerPinnedWindowsUnderPocket()
+        ; Применяем строгую иерархию слоев (карман -> закрепленные)
+        PocketManager.ApplyLayerHierarchy()
     }
 
-    if PocketManager.GetVisiblePocketWindow()
-        SetTimer(() => PocketManager.LowerPinnedWindowsUnderPocket(), -50)
-
     ShowOSD(targetWs)
+    PocketManager.ApplyLayerHierarchy()
+
     lastSwitchTime := A_TickCount
     isSwitchingWorkspace := false
     if (OverviewController.isOpen) {
@@ -1193,10 +1194,7 @@ ToggleFloatingWindows() {
     }
 
     EnsureTaskbarTopmost()
-    ; Окна кармана всегда должны быть на самом верхнем слое над закрепленными окнами
-    PocketManager.EnsurePocketTopmost()
-    if PocketManager.GetVisiblePocketWindow()
-        PocketManager.LowerPinnedWindowsUnderPocket()
+    PocketManager.ApplyLayerHierarchy()
     if (newState)
         ShowOSD(Chr(0x1F4CC))
 }
@@ -1217,22 +1215,8 @@ AlignWindowToDesktopState(hwnd, pushToBottom := false) {
         shouldPin := desktopStates.Has(stateKey) ? desktopStates[stateKey] : false
 
         if (shouldPin) {
-            if (!isTop) {
-                if (OverviewController.isOpen && OverviewController.overlayGui) {
-                    ; Размещаем закрепленное окно строго ПОД окном Overview, чтобы оно физически не могло быть выше
-                    DllCall("user32\SetWindowPos", "ptr", hwnd, "ptr", OverviewController.overlayGui.Hwnd, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0013)
-                    WinSetAlwaysOnTop(true, "ahk_id " hwnd)
-                    OverviewController.EnsureTopmost()
-                } else if (pocketHwnd := PocketManager.GetVisiblePocketWindow()) {
-                    ; Размещаем закрепленное окно ПОД окном кармана
-                    WinSetAlwaysOnTop(true, "ahk_id " hwnd)
-                    DllCall("user32\SetWindowPos", "ptr", hwnd, "ptr", pocketHwnd, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0013)
-                } else {
-                    WinSetAlwaysOnTop(true, "ahk_id " hwnd)
-                }
-            } else if (pocketHwnd := PocketManager.GetVisiblePocketWindow()) {
-                DllCall("user32\SetWindowPos", "ptr", hwnd, "ptr", pocketHwnd, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0013)
-            }
+            if (!isTop)
+                WinSetAlwaysOnTop(true, "ahk_id " hwnd)
             return false
         } else {
             if (isTop)

@@ -64,7 +64,7 @@ class App {
 }
 
 ShowOSD(text) {
-    global currentWorkspaces
+    global currentWorkspaces, osdGlobalGui
     static osdGui    := ""
     static osdText   := ""
     static hideTimer := ""
@@ -83,6 +83,7 @@ ShowOSD(text) {
             try osdGui.Destroy()
         }
         osdGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20 +E0x08000000")
+        osdGlobalGui := osdGui
         osdGui.BackColor := "1A1A1A"
         osdGui.MarginX := padX
         osdGui.MarginY := padY

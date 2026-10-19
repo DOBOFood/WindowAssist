@@ -68,6 +68,7 @@ global isPanicMode          := false
 global isMovingOrResizing   := false
 global lastTaskbarClickTime := 0
 global hasHooksInitialized  := false
+global osdGlobalGui         := 0
 
 global triggerHeightMaximized := 10  
 global triggerHeightFloating  := 10  

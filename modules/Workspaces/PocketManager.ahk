@@ -125,11 +125,11 @@ class PocketManager {
             ; Скрываем окно и не показываем рамку
             this.HidePocketWindow(hwnd)
         } else {
-            ; Устанавливаем AlwaysOnTop и выводим на самый верхний слой
+            ; Устанавливаем AlwaysOnTop и выводим на самый верх
             try WinSetAlwaysOnTop(true, "ahk_id " hwnd)
-            try DllCall("user32\SetWindowPos", "ptr", hwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0003) ; HWND_TOPMOST | SWP_NOMOVE | SWP_NOSIZE
             try WinActivate("ahk_id " hwnd)
             this.UpdateBorder(hwnd)
+            this.ApplyLayerHierarchy()
         }
 
         this.Init()
@@ -266,13 +266,11 @@ class PocketManager {
             if (style & 0x20000000) ; WS_MINIMIZE
                 DllCall("ShowWindowAsync", "ptr", hwnd, "int", 9) ; SW_RESTORE
             
-            ; Гарантируем наивысший слой HWND_TOPMOST
             WinSetAlwaysOnTop(true, "ahk_id " hwnd)
-            DllCall("user32\SetWindowPos", "ptr", hwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x4003) ; SWP_ASYNCWINDOWPOS | SWP_NOSIZE | SWP_NOMOVE
             ForceActivateWindow(hwnd)
         }
         this.UpdateBorder(hwnd)
-        this.LowerPinnedWindowsUnderPocket()
+        this.ApplyLayerHierarchy()
     }
 
     static IsInPocket(hwnd) {
@@ -320,35 +318,55 @@ class PocketManager {
                 }
             }
         }
-        this.EnsurePocketTopmost()
-        this.LowerPinnedWindowsUnderPocket()
+        this.ApplyLayerHierarchy()
     }
 
-    ; Гарантирует, что окна кармана всегда находятся выше обычных закрепленных окон
-    static EnsurePocketTopmost() {
-        for hwnd in this.pocketWindows {
-            if (WinExist("ahk_id " hwnd)) {
-                style := WinGetStyle("ahk_id " hwnd)
-                if !(style & 0x20000000) { ; WS_MINIMIZE
-                    DllCall("user32\SetWindowPos", "ptr", hwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0013) ; SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
-                    if this.borderGuis.Has(hwnd) {
-                        g := this.borderGuis[hwnd]
-                        DllCall("user32\SetWindowPos", "ptr", g.Hwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0013)
-                    }
-                }
+    ; Гарантирует строгую иерархию слоев:
+    ; Закрепленные окна -> Окно кармана -> Рамка кармана -> OSD -> Overview
+    static ApplyLayerHierarchy() {
+        global osdGlobalGui
+        pocketHwnd := this.GetVisiblePocketWindow()
+        if (!pocketHwnd || !WinExist("ahk_id " pocketHwnd))
+            return
+
+        ; 1. Гарантируем AlwaysOnTop для окна кармана и поднимаем его на вершину HWND_TOPMOST
+        if !(WinGetExStyle("ahk_id " pocketHwnd) & 0x8)
+            WinSetAlwaysOnTop(true, "ahk_id " pocketHwnd)
+        DllCall("user32\SetWindowPos", "ptr", pocketHwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0013) ; HWND_TOPMOST | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
+
+        ; 2. Рамку кармана поднимаем поверх окна кармана
+        if this.borderGuis.Has(pocketHwnd) {
+            g := this.borderGuis[pocketHwnd]
+            if (DllCall("user32\IsWindow", "ptr", g.Hwnd, "int")) {
+                DllCall("user32\SetWindowPos", "ptr", g.Hwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0013)
             }
+        }
+
+        ; 3. Опускаем все закрепленные окна ПОД окно кармана
+        this.LowerPinnedWindowsUnderPocket()
+
+        ; 4. Если активно окно OSD (уведомление рабочего стола), поднимаем его выше кармана
+        if (osdGlobalGui && DllCall("user32\IsWindow", "ptr", osdGlobalGui.Hwnd, "int") && DllCall("user32\IsWindowVisible", "ptr", osdGlobalGui.Hwnd, "int")) {
+            DllCall("user32\SetWindowPos", "ptr", osdGlobalGui.Hwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0013)
+        }
+
+        ; 5. Оверлей Overview всегда должен быть на самом верху
+        if (OverviewController.isOpen) {
+            OverviewController.EnsureTopmost()
         }
     }
 
-    ; Опускает закрепленные приложения под карманное окно, если карманное окно включено
+    ; Гарантирует, что окна кармана находятся в Topmost пуле
+    static EnsurePocketTopmost() {
+        this.ApplyLayerHierarchy()
+    }
+
+    ; Опускает закрепленные приложения под карманное окно
     static LowerPinnedWindowsUnderPocket() {
         global wsWindows, desktopStates, Rules
         pocketHwnd := this.GetVisiblePocketWindow()
         if (!pocketHwnd || !WinExist("ahk_id " pocketHwnd))
             return
-
-        ; Сначала гарантируем, что окно кармана и его рамка находятся на самом верху HWND_TOPMOST
-        this.EnsurePocketTopmost()
 
         ; Собираем все закрепленные окна в порядке их текущего расположения в Z-order
         pinnedList := []
@@ -391,21 +409,17 @@ class PocketManager {
                 }
 
                 if (isPinned) {
-                    if (!isTop)
-                        WinSetAlwaysOnTop(true, "ahk_id " hwnd)
                     pinnedList.Push(hwnd)
                 }
             }
         }
 
-        ; Опускаем все найденные закрепленные окна под окно кармана
+        ; Помещаем закрепленные окна строго ПОД окно кармана
         lastHwnd := pocketHwnd
         for pHwnd in pinnedList {
             DllCall("user32\SetWindowPos", "ptr", pHwnd, "ptr", lastHwnd, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0013) ; SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
             lastHwnd := pHwnd
         }
-
-        this.UpdateBorder(pocketHwnd)
     }
 
     ; Создание или обновление желтой рамки вокруг окна кармана
@@ -469,9 +483,9 @@ class PocketManager {
                 this.borderGuis.Delete(hwnd)
             }
 
-            ; Привязываем рамку как дочерний Owner к самому окну приложения (+Owner<hwnd>)
+            ; Создаем независимое +AlwaysOnTop окно (без +Owner, чтобы не зависеть от Z-порядка владельца)
             ; Прозрачна для кликов мыши (+E0x20) и не получает фокус (+E0x08000000)
-            g := Gui("-Caption +AlwaysOnTop +ToolWindow -DPIScale +E0x20 +E0x08000000 +Owner" hwnd)
+            g := Gui("-Caption +AlwaysOnTop +ToolWindow -DPIScale +E0x20 +E0x08000000")
             g.BackColor := this.borderColor
             this.borderGuis[hwnd] := g
             this.borderHwndToTarget[g.Hwnd] := hwnd
@@ -492,7 +506,7 @@ class PocketManager {
         if (posChanged || sizeChanged || !DllCall("user32\IsWindowVisible", "ptr", g.Hwnd)) {
             g.Show("x" wx " y" wy " w" ww " h" wh " NoActivate")
             this.lastCoords[hwnd] := {x: wx, y: wy, w: ww, h: wh}
-            ; Удерживаем рамку строго над целевым окном кармана без смены фокуса
+            ; Рамка поверх окна кармана
             DllCall("user32\SetWindowPos", "ptr", g.Hwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x0013) ; SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
         }
     }
