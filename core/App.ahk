@@ -5,7 +5,12 @@ class App {
         global hWinEventHook, winEventCallback, hMouseHook, mouseEventCallback
 
         if !A_IsAdmin {
-            try Run('*RunAs "' A_ScriptFullPath '"')
+            try {
+                if A_IsCompiled
+                    Run('*RunAs "' A_ScriptFullPath '"')
+                else
+                    Run('*RunAs "' A_AhkPath '" /restart "' A_ScriptFullPath '"')
+            }
             ExitApp()
         }
 

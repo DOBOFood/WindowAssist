@@ -1,6 +1,17 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
+; Запрос прав администратора при запуске
+if !A_IsAdmin {
+    try {
+        if A_IsCompiled
+            Run('*RunAs "' A_ScriptFullPath '"')
+        else
+            Run('*RunAs "' A_AhkPath '" /restart "' A_ScriptFullPath '"')
+    }
+    ExitApp()
+}
+
 A_MaxHotkeysPerInterval := 999999
 
 ; Directives for Ahk2Exe Compiler

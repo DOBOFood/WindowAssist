@@ -94,10 +94,7 @@ class ConfigManager {
             ),
             "rules", Map(
                 "groupedProcesses", ["prismlauncher.exe"],
-                "ignoreProcesses", [
-                    "flow.launcher.exe", "powertoys.powerlauncher.exe", "searchapp.exe",
-                    "snippingtool.exe", "startmenuexperiencehost.exe", "textinputhost.exe"
-                ]
+                "ignoreProcesses", []
             )
         )
     }
