@@ -4,6 +4,10 @@ class WebViewManager {
     static instances := Map()
     static sharedEnv := 0
 
+    /**
+     * Initializes or retrieves the shared WebView2 environment across all application windows.
+     * Sharing a single environment prevents COM E_ABORT (0x80004004) crashes.
+     */
     static GetSharedEnv() {
         if this.sharedEnv
             return this.sharedEnv
@@ -12,14 +16,20 @@ class WebViewManager {
         if !DirExist(userDataDir)
             DirCreate(userDataDir)
 
-        ; Создаем единое окружение WebView2, чтобы все окна использовали один runtime
         this.sharedEnv := WebView2.CreateEnvironmentAsync(, userDataDir).await()
         return this.sharedEnv
     }
 
+    /**
+     * Creates and attaches a WebView2 controller to a designated window.
+     * @param guiHwnd Parent window handle.
+     * @param htmlPath Path to target HTML document.
+     * @param onMessageCallback Callback invoked when a JSON message is received from WebView2.
+     * @returns {Object|Integer} Controller instance wrapper or 0 on failure.
+     */
     static Create(guiHwnd, htmlPath, onMessageCallback) {
         if !FileExist(htmlPath) {
-            MsgBox("Файл не найден:`n" htmlPath, "WindowAssist Error", 0x10)
+            MsgBox("File not found:`n" htmlPath, "WindowAssist Error", 0x10)
             return 0
         }
 
@@ -30,7 +40,6 @@ class WebViewManager {
             DirCreate(userDataDir)
 
         try {
-            ; Переиспользуем shared environment если доступен
             env := 0
             try env := this.GetSharedEnv()
 
@@ -38,11 +47,10 @@ class WebViewManager {
             if !IsObject(wvc)
                 return 0
 
-            ; Активируем размер и видимость холста
             wvc.Fill()
             wvc.IsVisible := true
 
-            ; Прозрачный фон контрола WebView2 (0 = fully transparent)
+            ; Set background to transparent (0x00000000) for custom glass / alpha styling
             try wvc.DefaultBackgroundColor := 0x00000000
 
             wv := wvc.CoreWebView2
@@ -66,8 +74,8 @@ class WebViewManager {
             return instance
         } catch as err {
             msg := InStr(err.Message, "0x80070002")
-                ? "Не установлен Microsoft Edge WebView2 Runtime.`nСкачайте с сайта Microsoft (Evergreen Bootstrapper)."
-                : ("Сбой запуска WebView2:`n" err.Message)
+                ? "Microsoft Edge WebView2 Runtime is not installed.`nPlease install the Evergreen Bootstrapper from Microsoft."
+                : ("Failed to initialize WebView2:`n" err.Message)
             MsgBox(msg, "WindowAssist Error", 0x10)
             return 0
         }
@@ -91,7 +99,7 @@ class WebViewManager {
             
             if (rawJson != "") {
                 data := JSON.Load(rawJson)
-                ; Если передана сериализованная строка JSON (как из overview.js)
+                ; Handle nested serialized JSON string payloads
                 if (data is String) {
                     try data := JSON.Load(data)
                 }

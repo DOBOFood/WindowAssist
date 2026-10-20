@@ -27,12 +27,12 @@ class OverviewController {
 
         this.isOpen := true
 
-        ; Окно + WebView2 создаём ОДИН раз и дальше переиспользуем
+        ; Initialize GUI and WebView2 control once and reuse to eliminate launch latency
         if (!this.overlayGui || !this.webInstance) {
             this.overlayGui := Gui("-Caption +AlwaysOnTop +ToolWindow -DPIScale")
             this.overlayGui.BackColor := "000000"
 
-            ; DWM Glass / композиция на всю область окна для прозрачности WebView2
+            ; Extend DWM frame into client area to enable WebView2 background transparency
             try {
                 ovHwnd := this.overlayGui.Hwnd
                 margins := Buffer(16, 0)
@@ -57,23 +57,20 @@ class OverviewController {
             }
         }
 
-        ; Отображаем окно с актуальными размерами текущего монитора мгновенно
         this.overlayGui.Show("x" mL " y" mT " w" w " h" h)
         DllCall("user32\SetForegroundWindow", "ptr", this.overlayGui.Hwnd)
 
-        ; Хоткей Esc для закрытия
         HotIfWinActive("ahk_id " this.overlayGui.Hwnd)
         Hotkey("Escape", (*) => OverviewController.Close(), "On")
         HotIfWinActive()
 
-        ; Скрываем рамки окон кармана, чтобы они находились строго под Overview
+        ; Hide physical pocket borders so they do not show above or interfere with Overview
         for h in PocketManager.pocketWindows {
             if PocketManager.borderGuis.Has(h) {
                 try PocketManager.borderGuis[h].Hide()
             }
         }
 
-        ; Отправка актуальных столов текущего монитора
         this.PushStateToWeb(monIdx)
     }
 
@@ -93,11 +90,10 @@ class OverviewController {
                 Hotkey("Escape", "Off")
                 HotIfWinActive()
             }
-            ; Прячем окно без уничтожения WebView2 для мгновенного повторного открытия
+            ; Hide window rather than destroying WebView2 to allow instantaneous reopening
             this.overlayGui.Hide()
         }
 
-        ; Восстанавливаем рамки окон кармана при закрытии Overview
         for h in PocketManager.pocketWindows {
             PocketManager.UpdateBorder(h)
         }
@@ -142,7 +138,6 @@ class OverviewController {
                     if (title == "")
                         title := WinGetProcessName("ahk_id " hwnd)
 
-                    ; Быстрое получение иконки окна
                     iconB64 := ""
                     try iconB64 := CaptureEngine.GetWindowIconBase64(hwnd)
 
@@ -160,7 +155,7 @@ class OverviewController {
 
             workspacesArr.Push(Map(
                 "id", wsNum,
-                "name", "Стол " wsNum,
+                "name", "Desktop " wsNum,
                 "apps", appCards
             ))
         }
@@ -259,7 +254,7 @@ class OverviewController {
             for hwnd in hwndsToAdd {
                 PocketManager.AddWindow(hwnd)
             }
-            ; Используем асинхронный вызов, чтобы не блокировать UI
+            ; Asynchronously dispatch state to prevent UI deadlock inside IPC callback
             SetTimer(() => this.PushStateToWeb(this.currentMon), -50)
         }
         else if (action == "CLOSE_WINDOW_AHK") {
@@ -359,7 +354,7 @@ class OverviewController {
                             hwndsToMove.Push(Integer(trimmed))
                     }
                 } else if IsNumber(val) {
-                    hwndsToMove.Push(Integer(val))
+                    hwndsToAdd.Push(Integer(val))
                 }
             } else if data.Has("hwnd") {
                 hwndsToMove.Push(Integer(data["hwnd"]))

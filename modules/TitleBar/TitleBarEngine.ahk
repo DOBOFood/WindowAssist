@@ -248,9 +248,8 @@ HideTitleBar(hwnd, info) {
         if (style & 0x00C00000) {
             newStyle := style & ~0x00C00000
 
-            ; WM_SETREDRAW = 11, SMTO_ABORTIFHUNG = 0x0002, 10ms
+            ; Temporarily suspend redraw (WM_SETREDRAW = 11) using timeout to prevent rendering glitches
             DllCall("SendMessageTimeout", "ptr", hwnd, "uint", 11, "ptr", 0, "ptr", 0, "uint", 0x0002, "uint", 10, "ptr*", 0)
-
             DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -16, "ptr", newStyle)
 
             style := WinGetStyle("ahk_id " hwnd)
@@ -289,7 +288,6 @@ ShowTitleBar(hwnd, info) {
             newStyle := style | 0x00C00000
 
             DllCall("SendMessageTimeout", "ptr", hwnd, "uint", 11, "ptr", 0, "ptr", 0, "uint", 0x0002, "uint", 10, "ptr*", 0)
-
             DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -16, "ptr", newStyle)
 
             style := WinGetStyle("ahk_id " hwnd)

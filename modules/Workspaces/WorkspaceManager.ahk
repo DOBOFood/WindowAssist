@@ -78,7 +78,7 @@ RegisterNewWindow(hwnd) {
         }
     }
 
-    ; Проверяем, есть ли сохраненное правило для этого приложения в state.json (только при инициализации до старта хуков)
+    ; Restore workspace binding from state.json if launching without cached window properties
     if (propWs <= 0 && !hasHooksInitialized && FileExist(A_ScriptDir "\state.json")) {
         try {
             rawState := FileRead(A_ScriptDir "\state.json", "UTF-8")
@@ -141,7 +141,6 @@ UnregisterWindow(hwnd) {
         closingWs := wsWindows[hwnd].ws
     }
 
-    ; Удаляем окно из пула Alt+Tab
     CrossWorkspaceAltTab.RemoveWindow(hwnd)
     
     RemoveWindowProps(hwnd)
@@ -154,9 +153,7 @@ UnregisterWindow(hwnd) {
     if (lastActiveHwnd == hwnd)
         lastActiveHwnd := 0
 
-    ; Если закрытое окно было на текущем активном столе монитора —
-    ; активируем следующее окно строго на этом же рабочем столе,
-    ; чтобы Windows не перекинула фокус на чужой рабочий стол
+    ; Keep focus confined to the active workspace on this monitor instead of leaking to background desktops
     if (closingMon && currentWorkspaces.Has(closingMon) && currentWorkspaces[closingMon] == closingWs) {
         SetTimer(() => ActivateTopWindowOnWorkspace(closingMon, closingWs), -20)
     }
@@ -365,8 +362,7 @@ HandleWindowActivation(rootHwnd, isCreated := false, originalHwnd := 0) {
     if (isCreated)
         return
 
-    ; Окна из кармана не привязаны ни к какому конкретному рабочему столу (ws=0)
-    ; Их активация никогда не должна инициировать переключение рабочих столов
+    ; Pocket scratchpad windows belong to ws=0 and must never trigger desktop switches
     if (PocketManager.IsInPocket(rootHwnd)) {
         PocketManager.ApplyLayerHierarchy()
         return
@@ -374,7 +370,6 @@ HandleWindowActivation(rootHwnd, isCreated := false, originalHwnd := 0) {
 
     info := wsWindows[rootHwnd]
 
-    ; Если окно перетащили на другой монитор, мгновенно перепривязываем его к новому монитору и его текущему столу
     actualMon := GetWindowMonitor(rootHwnd)
     if (info.mon != actualMon && !info.isOffscreen) {
         info.mon := actualMon
@@ -410,7 +405,6 @@ HandleWindowActivation(rootHwnd, isCreated := false, originalHwnd := 0) {
 
     if (isTaskbarClick) {
         try {
-            ; Используем асинхронный вызов для проверки состояния окна, чтобы не зависнуть
             style := WinGetStyle("ahk_id " rootHwnd)
             if (style & 0x20000000) { ; WS_MINIMIZE
                 if (info.isMax)
@@ -664,7 +658,6 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
     
     try {
         for hwnd, info in wsWindows {
-            ; Окна из кармана никогда не скрываем при переключении столов
             if (PocketManager.IsInPocket(hwnd))
                 continue
 
@@ -684,7 +677,6 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
             }
         }
 
-        ; Синхронизируем присутствие окон кармана на новом рабочем столе
         PocketManager.OnWorkspaceSwitched(targetMon, targetWs)
 
         stateKey := targetMon "_" targetWs
@@ -712,7 +704,6 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
             SafeDesktopFocus()
         }
 
-        ; Применяем строгую иерархию слоев (карман -> закрепленные)
         PocketManager.ApplyLayerHierarchy()
     }
 
@@ -726,7 +717,6 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
         OverviewController.PushStateToWeb(targetMon)
     }
 
-    ; Асинхронно сохраняем текущее состояние в state.json
     SetTimer(() => SaveState(), -200)
 }
 
@@ -835,7 +825,6 @@ SyncAppWindowsLocation(masterHwnd, targetMon, targetWs) {
     }
 }
 
-; Отслеживание перемещаемого окна при зажатом Shift
 global pendingMove := {
     hwnd: 0,
     targetWs: 0,
@@ -882,7 +871,6 @@ MoveActiveWindowAndFollow(targetWs) {
 
     curWs := currentWorkspaces[monIdx]
 
-    ; 1. Обновляем координаты и привязку окна (и сгруппированных окон) к targetWs
     windowsToMove := IsAppGrouped(targetHwnd) ? GetAppWindows(targetHwnd) : [targetHwnd]
     for h in windowsToMove {
         if !wsWindows.Has(h) {
@@ -896,10 +884,8 @@ MoveActiveWindowAndFollow(targetWs) {
         }
     }
 
-    ; 2. Переключаем рабочий стол монитора на targetWs
     SwitchWorkspace(monIdx, targetWs, targetHwnd)
 
-    ; 3. Обновляем анимацию рамки для окна
     if (HotkeyManager.AreMovePrefixKeysPressed()) {
         StartWindowSelectionAnimation(targetHwnd)
     } else {
@@ -1055,7 +1041,6 @@ AnimateBorderPulse() {
     if (!pendingMove.borderGui)
         return
 
-    ; Если клавиши отпущены или окно не существует, закрываем обводку
     if (!HotkeyManager.AreMovePrefixKeysPressed() || !pendingMove.hwnd || !WinExist("ahk_id " pendingMove.hwnd)) {
         EndPendingMove()
         return
@@ -1238,7 +1223,7 @@ IsEligibleFloatingWindow(hwnd) {
         if (wsWindows.Has(hwnd) && wsWindows[hwnd].isOffscreen)
             return false
 
-        ; Окна кармана исключены из закрепления (они управляются отдельно и всегда выше закрепленных)
+        ; Pocket scratchpad windows are excluded from desktop floating pin state
         if PocketManager.IsInPocket(hwnd) || PocketManager.IsBorderHwnd(hwnd)
             return false
 
@@ -1415,7 +1400,6 @@ LoadState() {
     if !(stateObj is Map)
         return false
 
-    ; 1. Восстанавливаем активные рабочие столы мониторов
     if (stateObj.Has("currentWorkspaces") && stateObj["currentWorkspaces"] is Array) {
         for idx, wsNum in stateObj["currentWorkspaces"] {
             if (idx <= currentWorkspaces.Length)
@@ -1423,17 +1407,14 @@ LoadState() {
         }
     }
 
-    ; 2. Восстанавливаем состояния столов (tiling/floating)
     if (stateObj.Has("desktopStates") && stateObj["desktopStates"] is Map) {
         for k, v in stateObj["desktopStates"]
             desktopStates[k] := (v == 1 || v == true)
     }
 
-    ; 3. Восстанавливаем окна
     if (stateObj.Has("windows") && stateObj["windows"] is Array) {
         savedList := stateObj["windows"]
         
-        ; Сначала сопоставляем по живому HWND (если скрипт перезапущен без закрытия окон)
         usedHwnds := Map()
         unmatchedSaved := []
 
@@ -1461,7 +1442,6 @@ LoadState() {
             }
         }
 
-        ; Если окна перезапустились или открыты заново — сопоставляем по процессу, пути и классу
         if (unmatchedSaved.Length > 0) {
             for curHwnd in WinGetList() {
                 if (!IsManagedWindow(curHwnd) || usedHwnds.Has(curHwnd) || wsWindows.Has(curHwnd))
@@ -1474,14 +1454,12 @@ LoadState() {
                 curClass := ""
                 try curClass := StrLower(WinGetClass("ahk_id " curHwnd))
 
-                ; Ищем подходящую запись в сохраненных
                 matchedIdx := 0
                 for idx, sItem in unmatchedSaved {
                     sProc := StrLower(sItem.Has("process") ? sItem["process"] : "")
                     sPath := StrLower(sItem.Has("path") ? sItem["path"] : "")
                     sClass := StrLower(sItem.Has("class") ? sItem["class"] : "")
 
-                    ; Точное совпадение по исполняемому файлу и классу
                     if (sProc != "" && sProc == curProc && (sClass == "" || sClass == curClass)) {
                         matchedIdx := idx
                         break

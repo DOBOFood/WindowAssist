@@ -28,7 +28,6 @@ function sendToAhk(msg) {
   }
 }
 
-// 1. Прием данных от AutoHotkey
 if (window.chrome && window.chrome.webview) {
   window.chrome.webview.addEventListener('message', (event) => {
     let msg = event.data;
@@ -42,7 +41,6 @@ if (window.chrome && window.chrome.webview) {
   });
 }
 
-// 2. Сигнал AutoHotkey о том, что страница готова принимать данные
 function notifyReady() {
   sendToAhk({ action: 'DOM_READY' });
 }
@@ -53,12 +51,10 @@ if (document.readyState === 'loading') {
   notifyReady();
 }
 
-// 3. Отрисовка сетки рабочих столов
 function renderGrid(model) {
   const container = document.getElementById('workspaces-grid');
   if (!container) return;
 
-  // Очищаем из выделения окна, которых больше нет
   const allExistingHwnds = new Set();
   if (model.workspaces && Array.isArray(model.workspaces)) {
     model.workspaces.forEach(ws => {
@@ -79,7 +75,6 @@ function renderGrid(model) {
     const col = document.createElement('div');
     col.className = 'workspace-column';
 
-    // Карточка рабочего стола
     const card = document.createElement('div');
     card.className = `workspace-card ${ws.isCurrent ? 'current' : ''}`;
     card.dataset.wsId = ws.id;
@@ -89,24 +84,20 @@ function renderGrid(model) {
     num.innerText = ws.id;
     card.appendChild(num);
 
-    // Скрытый оверлей под превью
     const previewImg = document.createElement('img');
     previewImg.className = 'card-preview-overlay';
     previewImg.id = `preview-${ws.id}`;
     card.appendChild(previewImg);
 
-    // Переход на стол по клику
     card.addEventListener('click', () => {
       sendToAhk({ action: 'SWITCH_WORKSPACE', targetWs: ws.id });
     });
 
-    // Удаление стола по ПКМ
     card.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       sendToAhk({ action: 'DELETE_WORKSPACE', targetWs: ws.id });
     });
 
-    // Зона Drag & Drop на родительской колонке стола
     col.addEventListener('dragover', (e) => {
       e.preventDefault();
       col.classList.add('drag-over-col');
@@ -141,7 +132,6 @@ function renderGrid(model) {
       }
     });
 
-    // Дублируем слушатели на card и appList
     card.addEventListener('dragover', (e) => {
       e.preventDefault();
       col.classList.add('drag-over-col');
@@ -169,7 +159,6 @@ function renderGrid(model) {
 
     col.appendChild(card);
 
-    // Список приложений под столом
     const appList = document.createElement('div');
     appList.className = 'app-list';
 
@@ -215,7 +204,6 @@ function renderGrid(model) {
         appItem.appendChild(icon);
         appItem.appendChild(title);
 
-        // Клик по приложению
         appItem.addEventListener('click', (e) => {
           if (e.button === 0) {
             if (e.ctrlKey || e.metaKey) {
@@ -229,7 +217,6 @@ function renderGrid(model) {
           }
         });
 
-        // Мгновенный показ превью при наведении
         appItem.addEventListener('mouseenter', () => {
           if (!isDraggingWindow && app.preview) {
             previewImg.src = app.preview;
@@ -240,7 +227,6 @@ function renderGrid(model) {
           previewImg.classList.remove('active');
         });
 
-        // Перетаскивание
         appItem.addEventListener('dragstart', (e) => {
           isDraggingWindow = true;
           previewImg.classList.remove('active');
@@ -316,7 +302,6 @@ function renderGrid(model) {
     container.appendChild(col);
   });
 
-  // Карточка добавления нового рабочего стола (+)
   const addCol = document.createElement('div');
   addCol.className = 'workspace-column';
   const addCard = document.createElement('div');
@@ -335,7 +320,6 @@ function onBackdropClick(e) {
   }
 }
 
-// 4. Ресайз контейнера по горизонтали с шагом 10px
 const container = document.getElementById('grid-container');
 const handle = document.getElementById('resize-handle');
 let isResizing = false;
@@ -377,7 +361,6 @@ if (handle && container) {
   });
 }
 
-// 5. Закрытие по клавише Escape
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     sendToAhk({ action: 'CLOSE_OVERVIEW' });

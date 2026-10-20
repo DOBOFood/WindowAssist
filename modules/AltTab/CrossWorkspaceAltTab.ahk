@@ -19,7 +19,7 @@ class CrossWorkspaceAltTab {
         global wsWindows
         if (!hwnd || !wsWindows.Has(hwnd))
             return
-        ; Окна кармана не сохраняем в историю Alt+Tab
+        ; Do not track scratchpad/pocket windows in the Alt+Tab MRU stack
         if (PocketManager.IsInPocket(hwnd))
             return
         info := wsWindows[hwnd]
@@ -32,14 +32,12 @@ class CrossWorkspaceAltTab {
 
         list := this.historyPerMon[mon]
 
-        ; Удаляем окно из предыдущей позиции в истории, если оно уже там было
         for idx, h in list {
             if (h == hwnd) {
                 list.RemoveAt(idx)
                 break
             }
         }
-        ; Добавляем на 1 место в истории (MRU: 1 = текущее активное окно)
         list.InsertAt(1, hwnd)
     }
 
@@ -99,16 +97,15 @@ class CrossWorkspaceAltTab {
             return 0
 
         hIcon := 0
-        ; 1. Запрос WM_GETICON (ICON_BIG) с таймаутом (SMTO_ABORTIFHUNG = 0x0002, 10ms)
-        hIcon := 0
+        ; Query WM_GETICON (ICON_BIG) with timeout (SMTO_ABORTIFHUNG = 0x0002, 10ms)
         DllCall("SendMessageTimeout", "Ptr", hwnd, "UInt", 0x007F, "Ptr", 1, "Ptr", 0, "UInt", 0x0002, "UInt", 10, "Ptr*", &hIcon)
-        ; 2. Запрос WM_GETICON (ICON_SMALL2) с таймаутом
+        ; Query WM_GETICON (ICON_SMALL2) fallback
         if (!hIcon)
             DllCall("SendMessageTimeout", "Ptr", hwnd, "UInt", 0x007F, "Ptr", 2, "Ptr", 0, "UInt", 0x0002, "UInt", 10, "Ptr*", &hIcon)
-        ; 3. Классовая иконка GCLP_HICON (-14)
+        ; Fallback to class icon (GCLP_HICON = -14)
         if (!hIcon)
             hIcon := DllCall("GetClassLongPtr", "Ptr", hwnd, "Int", -14, "Ptr")
-        ; 4. Извлечение первой иконки из exe-файла
+        ; Fallback to primary icon embedded in the executable binary
         if (!hIcon) {
             try {
                 exePath := WinGetProcessPath("ahk_id " hwnd)
@@ -136,7 +133,7 @@ class CrossWorkspaceAltTab {
         seenHwnds := Map()
         seenWs := Map()
 
-        ; 1. Добавляем окна из истории текущего монитора (MRU порядок)
+        ; Populate windows from current monitor MRU history
         if (this.historyPerMon.Has(curMon)) {
             cleanList := []
             for hwnd in this.historyPerMon[curMon] {
@@ -169,7 +166,7 @@ class CrossWorkspaceAltTab {
             this.historyPerMon[curMon] := cleanList
         }
 
-        ; 2. Добавляем остальные существующие окна текущего монитора
+        ; Populate remaining active windows on the monitor
         for hwnd, info in wsWindows {
             if (PocketManager.IsInPocket(hwnd))
                 continue
@@ -193,7 +190,6 @@ class CrossWorkspaceAltTab {
         }
     }
 
-    ; Форматирование заголовка на 2 строки без лишних отступов и с многоточием
     static FormatTwoLineTitle(title, maxPerLine := 16) {
         title := Trim(title)
         if (StrLen(title) <= maxPerLine)
@@ -226,13 +222,9 @@ class CrossWorkspaceAltTab {
         for idx, item in this.entries {
             xPos := gap + (idx - 1) * (itemW + gap)
             
-            ; 1. Внутренний серый квадрат (bgBox)
             bgBox := this.guiObj.Add("Text", "x" xPos " y" gap " w" itemW " h" itemH " Background252525")
-
-            ; 2. Бейдж рабочего стола
             wsBadge := this.guiObj.Add("Text", "x" (xPos + 6) " y" (gap + 6) " w46 h20 Center Background3A3A3A cWhite", "WS " item.ws)
             
-            ; 3. Иконка приложения (32x32) на y = gap + 30
             iconCtrl := 0
             if (item.hIcon) {
                 try {
@@ -243,12 +235,10 @@ class CrossWorkspaceAltTab {
                 }
             }
             
-            ; 4. Заголовок окна: ровно +10px под иконкой (y = gap + 30 + 32 + 10 = gap + 72)
             formattedTitle := this.FormatTwoLineTitle(item.title, 16)
             titleLabel := this.guiObj.Add("Text", "x" (xPos + 6) " y" (gap + 72) " w" (itemW - 12) " h42 Center BackgroundTrans cCCCCCC", formattedTitle)
 
-            ; 5. Четыре линии белой рамки (толщиной 2px), создаются ПОСЛЕ bgBox,
-            ; благодаря чему они гарантированно находятся выше по Z-order и всегда отображаются поверх серого квадрата
+            ; Highlight borders rendered after background to maintain correct Z-order
             tLine := this.guiObj.Add("Text", "x" xPos " y" gap " w" itemW " h2 BackgroundFFFFFF")
             bLine := this.guiObj.Add("Text", "x" xPos " y" (gap + itemH - 2) " w" itemW " h2 BackgroundFFFFFF")
             lLine := this.guiObj.Add("Text", "x" xPos " y" gap " w2 h" itemH " BackgroundFFFFFF")
@@ -278,7 +268,6 @@ class CrossWorkspaceAltTab {
             })
         }
 
-        ; Позиционируем окно ровно по центру целевого монитора
         mL := 0, mT := 0, mR := 0, mB := 0
         MonitorGet(this.targetMon, &mL, &mT, &mR, &mB)
         monW := mR - mL, monH := mB - mT
@@ -317,14 +306,14 @@ class CrossWorkspaceAltTab {
             return
         }
 
-        ; 1. Отпускание клавиши Alt -> переключение на выбранное окно
+        ; Releasing Alt commits window selection
         if !GetKeyState("Alt", "P") {
             SetTimer(ObjBindMethod(this, "WatchEvents"), 0)
             this.ExecuteSelection()
             return
         }
 
-        ; 2. Клик мышью за пределами окна Alt+Tab -> закрытие
+        ; Mouse click outside the HUD dismisses it
         if GetKeyState("LButton", "P") || GetKeyState("RButton", "P") {
             CoordMode("Mouse", "Screen")
             MouseGetPos(&mX, &mY)

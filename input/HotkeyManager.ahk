@@ -130,12 +130,10 @@ class HotkeyManager {
     }
 
     static RegisterBaseHooks() {
-        ; Динамический хук переноса окон по префиксу move_window_prefix
         this.RegisterPrefixHooks()
     }
 
     static RegisterPrefixHooks() {
-        ; Базовые физические хуки для NumLock + Shift
         try {
             Hotkey("*NumLock", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0), "On")
             Hotkey("*NumLock Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0), "On")
@@ -145,7 +143,6 @@ class HotkeyManager {
             Hotkey("~*RShift", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0), "On")
         }
 
-        ; Дополнительно вешаем хук на любую произвольную комбинацию из move_window_prefix
         for pref in this.currentModifiers {
             s := Trim(pref)
             if (s == "")
@@ -209,7 +206,6 @@ class HotkeyManager {
         if !(binds is Map)
             return
 
-        ; Сначала считываем move_window_prefix
         if binds.Has("move_window_prefix") {
             this.currentModifiers := this._ToArrayList(binds["move_window_prefix"])
             this.RegisterPrefixHooks()
@@ -217,9 +213,8 @@ class HotkeyManager {
 
         delayedBinds := []
 
-        ; Обработка модификатора мыши (перемещение - ЛКМ, изменение размера - ПКМ)
         mouseMods := binds.Has("window_mouse_modifier") ? this._ToArrayList(binds["window_mouse_modifier"]) : []
-        ; Обратная совместимость, если в профиле старые ключи window_mouse_move / resize
+        ; Maintain backward compatibility if profile contains legacy window_mouse_move / resize keys
         if (mouseMods.Length == 0 && binds.Has("window_mouse_move")) {
             for m in this._ToArrayList(binds["window_mouse_move"]) {
                 cleaned := RegExReplace(m, "\s*\+\s*LButton.*$", "")
@@ -357,7 +352,7 @@ class HotkeyManager {
             }
         }
 
-        ; Пользовательские двухклавишные сочетания (например, "Tab + Win")
+        ; Custom dual-key combos (e.g. "Tab + Win")
         if (otherPrefix != "") {
             cond := this.CreateModifierCondition(hasCtrl, hasShift, hasAlt, hasWin, allowMovePrefix)
             if (key = "Win")
@@ -383,14 +378,14 @@ class HotkeyManager {
             return [Map("key", otherPrefix " & " key, "cond", cond)]
         }
 
-        ; Сочетания с NumLock как модификатором
+        ; Combinations using NumLock as a custom prefix key
         if (hasNumLock) {
             ahkKey := (StrLen(key) == 1) ? StrLower(key) : key
             cond := this.CreateModifierCondition(hasCtrl, hasShift, hasAlt, hasWin, allowMovePrefix)
             return [Map("key", "NumLock & " ahkKey, "cond", cond)]
         }
 
-        ; Стандартные модификаторы Win, Ctrl, Alt, Shift
+        ; Standard modifier combinations (Win, Ctrl, Alt, Shift)
         mods := (hasWin ? "#" : "") (hasCtrl ? "^" : "") (hasAlt ? "!" : "") (hasShift ? "+" : "")
         ahkKey := (StrLen(key) == 1) ? StrLower(key) : key
         return [Map("key", mods ahkKey, "cond", 0)]
@@ -423,7 +418,7 @@ OpenSettingsWindow() {
         return
     }
 
-    settingsGui := Gui("+Resize", "Настройки WindowAssist")
+    settingsGui := Gui("+Resize", "WindowAssist Settings")
     htmlFile := A_ScriptDir "\web\settings.html"
     
     onMsg := (data) => SettingsIPCHandler(data, webInst)
@@ -447,7 +442,6 @@ OpenSettingsWindow() {
     settingsGui.Show("w860 h620 Center")
     WebViewManager.Resize(webInst, 860, 620)
 
-    ; Передаем актуальный конфиг в веб-форму
     SetTimer(() => WebViewManager.Send(webInst, Map("action", "LOAD_CONFIG", "config", ConfigManager.configData)), -200)
     SetTimer(() => WebViewManager.Send(webInst, Map("action", "LOAD_CONFIG", "config", ConfigManager.configData)), -600)
 }

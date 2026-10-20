@@ -1,7 +1,9 @@
 #Requires AutoHotkey v2.0
 
 class LayerPeeker {
-    ; Вызывается при клике Meta + LButton (подобие Alt+Tab для перекрывающихся плавающих окон)
+    /**
+     * Cycles overlapping floating windows directly under the mouse cursor.
+     */
     static OnClick() {
         global wsWindows, currentWorkspaces, Rules
 
@@ -11,14 +13,12 @@ class LayerPeeker {
         monIdx := GetCurrentTargetMonitor()
         curWs  := currentWorkspaces[monIdx]
 
-        ; Текущее активное окно в фокусе
         fgHwnd := DllCall("GetForegroundWindow", "ptr")
         if (fgHwnd) {
             fgRoot := DllCall("GetAncestor", "ptr", fgHwnd, "uint", 2, "ptr")
             fgHwnd := fgRoot ? fgRoot : fgHwnd
         }
 
-        ; Собираем окна текущего рабочего стола под курсором в точном Z-порядке сверху вниз
         windowsUnderCursor := []                                 
         candidateFloating := []
 
@@ -36,18 +36,15 @@ class LayerPeeker {
             if !IsMainWindow(hwnd)
                 continue
 
-            ; Окно должно принадлежать текущему монитору и рабочему столу
             if wsWindows.Has(hwnd) {
                 info := wsWindows[hwnd]
                 if (info.mon != monIdx || info.ws != curWs || info.isOffscreen)
                     continue
             } else {
-                ; Для неуправляемых окон проверяем монитор
                 if (GetWindowMonitor(hwnd) != monIdx)
                     continue
             }
 
-            ; Исключаем закрепленные окна из перебора
             if this.IsPinnedWindow(hwnd)
                 continue
 
@@ -63,17 +60,14 @@ class LayerPeeker {
             }
         }
 
-        ; Закрепленные окна (AlwaysOnTop или из кармана) не должны перебираться
         fgIsPinned := (fgHwnd && this.IsPinnedWindow(fgHwnd))
 
-        ; Если в фокусе обычное плавающее окно - всегда отправляем его на самый задний слой (HWND_BOTTOM),
-        ; чтобы оно уходило под maximized/fullscreen окна
+        ; Send foreground floating window to HWND_BOTTOM so underlying windows emerge
         fgIsFloating := (fgHwnd && this.IsFloatingWindow(fgHwnd) && !fgIsPinned)
         if (fgIsFloating) {
             this.SendToBottom(fgHwnd)
         }
 
-        ; Ищем целевое окно для активации
         targetHwnd := 0
 
         if (windowsUnderCursor.Length > 0) {
@@ -86,7 +80,6 @@ class LayerPeeker {
             }
 
             if (fgIsFloating) {
-                ; Если плавающее окно ушло вниз, активируем следующее окно под курсором
                 if (fgIdx > 0 && fgIdx < windowsUnderCursor.Length) {
                     targetHwnd := windowsUnderCursor[fgIdx + 1].hwnd
                 } else if (fgIdx == 0 && windowsUnderCursor[1].hwnd != fgHwnd) {
@@ -95,8 +88,6 @@ class LayerPeeker {
                     targetHwnd := (windowsUnderCursor[1].hwnd != fgHwnd) ? windowsUnderCursor[1].hwnd : windowsUnderCursor[2].hwnd
                 }
             } else {
-                ; Если в фокусе было не плавающее окно (maximized, fullscreen, карман и т.д.),
-                ; выбираем первое плавающее окно под курсором
                 for item in windowsUnderCursor {
                     if (item.isFloat && item.hwnd != fgHwnd) {
                         targetHwnd := item.hwnd
@@ -106,7 +97,7 @@ class LayerPeeker {
             }
         }
 
-        ; Fallback: если под курсором не было окон, циклически переключаем плавающие окна (как Alt+Tab)
+        ; Fallback: Cycle through all floating windows on the workspace
         if (!targetHwnd && candidateFloating.Length > 0) {
             fgIdx := 0
             for idx, h in candidateFloating {
@@ -128,13 +119,15 @@ class LayerPeeker {
         }
     }
 
-    ; Отправляет окно на самый задний слой Z-порядка (под все обычные, maximized и fullscreen окна)
+    /**
+     * Sends the window to the bottom of the Z-order stack (HWND_BOTTOM = 1).
+     * @param hwnd Target window handle.
+     */
     static SendToBottom(hwnd) {
         try {
             if !hwnd || !WinExist("ahk_id " hwnd)
                 return
 
-            ; Снимаем AlwaysOnTop если был установлен
             if (WinGetExStyle("ahk_id " hwnd) & 0x8)
                 WinSetAlwaysOnTop(false, "ahk_id " hwnd)
 
@@ -143,7 +136,6 @@ class LayerPeeker {
         }
     }
 
-    ; Проверка, является ли окно закрепленным (AlwaysOnTop, на закрепленном столе или в кармане)
     static IsPinnedWindow(hwnd) {
         global desktopStates, wsWindows
         try {
@@ -168,33 +160,27 @@ class LayerPeeker {
         }
     }
 
-    ; Проверка: обычное плавающее окно (не maximized и не fullscreen)
     static IsFloatingWindow(hwnd) {
         global Rules
         try {
-            ; Свёрнутые или максимизированные окна исключаются
             style := WinGetStyle("ahk_id " hwnd)
             if (style & 0x20000000) || (style & 0x01000000) ; WS_MINIMIZE || WS_MAXIMIZE
                 return false
 
-            ; Исключаем игнорируемые процессы и системные классы
             procName := StrLower(WinGetProcessName("ahk_id " hwnd))
             if Rules.ignoreProcesses.Has(procName)
                 return false
 
-            wClass := StrLower(WinGetClass("ahk_id " hwnd))
-            if Rules.systemClasses.Has(wClass)
+            winClass := StrLower(WinGetClass("ahk_id " hwnd))
+            if Rules.systemClasses.Has(winClass)
                 return false
 
-            ; Исключаем окна без заголовка
             if (WinGetTitle("ahk_id " hwnd) == "")
                 return false
 
-            ; Проверка на главное окно
             if !IsMainWindow(hwnd)
                 return false
 
-            ; Проверка на Fullscreen (окно перекрывает монитор целиком без рамок)
             monIdx := GetWindowMonitor(hwnd)
             mL := 0, mT := 0, mR := 0, mB := 0
             if MonitorGet(monIdx, &mL, &mT, &mR, &mB) {

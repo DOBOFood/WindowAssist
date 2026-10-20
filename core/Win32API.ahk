@@ -66,12 +66,16 @@ class Win32API {
         DllCall("user32\ClipCursor", "ptr", 0)
     }
 
+    /**
+     * Programmatically locates and triggers the taskbar button corresponding to the specified window via UI Automation.
+     * @param hwnd Target window handle.
+     * @returns {Boolean} True if button was successfully invoked or clicked.
+     */
     static ClickTaskbarIconForWindow(hwnd) {
         try {
             if (!hwnd || !DllCall("IsWindow", "Ptr", hwnd, "Int"))
                 return false
 
-            ; Инициализация UI Automation
             static IUIAutomationType := "{C2B544FB-0728-11D3-9D7B-0000F81EF32E}"
             static CUIAutomationType := "{FF48DB72-60D9-4F45-8119-DEC84DB5D98D}"
             
@@ -79,12 +83,10 @@ class Win32API {
             if (!uia)
                 return false
 
-            ; Получаем корневой элемент рабочего стола
             uia.GetRootElement(&rootElement)
             if (!rootElement)
                 return false
 
-            ; Условие поиска панели задач (class Shell_TrayWnd или Shell_SecondaryTrayWnd)
             condTray := uia.CreatePropertyCondition(30022, "Shell_TrayWnd")
             condSecTray := uia.CreatePropertyCondition(30022, "Shell_SecondaryTrayWnd")
             condTrayAny := uia.CreateOrCondition(condTray, condSecTray)
@@ -107,7 +109,6 @@ class Win32API {
                 if (!trayEl)
                     continue
 
-                ; Ищем элементы внутри таскбара, которые соответствуют нашему ProcessId или связаны с окном
                 condBtn1 := uia.CreatePropertyCondition(30022, "Taskbar.TaskListButtonAccessible")
                 condBtn2 := uia.CreatePropertyCondition(30022, "Taskbar.TaskButtonAutomationPeer")
                 condBtnAny := uia.CreateOrCondition(condBtn1, condBtn2)
@@ -125,7 +126,6 @@ class Win32API {
                     btnPid := 0
                     try btnPid := btnEl.CurrentProcessId
                     if (btnPid == pid) {
-                        ; Находим паттерн Invoke или просто кликаем по центру элемента
                         try {
                             invokePattern := btnEl.GetCurrentPattern(10000)
                             if (invokePattern) {
@@ -134,7 +134,7 @@ class Win32API {
                             }
                         }
 
-                        ; Если Invoke недоступен, кликаем по boundingRect
+                        ; Fallback to synthesized cursor click on element bounds if Invoke pattern is unsupported
                         try {
                             rect := btnEl.CurrentBoundingRectangle
                             if (rect) {
@@ -156,7 +156,6 @@ class Win32API {
     }
 }
 
-; Helper global functions for direct callers
 SetDwmAttribute(hwnd, attr, colorVal) => Win32API.SetDwmAttribute(hwnd, attr, colorVal)
 GetWindowFramePadding(hwnd, &bx, &by) => Win32API.GetWindowFramePadding(hwnd, &bx, &by)
 IsWindowCloaked(hwnd) => Win32API.IsWindowCloaked(hwnd)

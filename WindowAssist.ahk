@@ -1,7 +1,7 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
-; Запрос прав администратора при запуске
+; Elevate process to administrator privileges if required
 if !A_IsAdmin {
     try {
         if A_IsCompiled

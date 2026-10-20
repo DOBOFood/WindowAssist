@@ -112,7 +112,6 @@ body, html {
   width: 6px;
 }
 
-/* Симметричный 3-колоночный flex-макет */
 .overview-main-layout {
   display: flex;
   flex-direction: row;
@@ -122,7 +121,6 @@ body, html {
   width: 100%;
 }
 
-/* Левая колонка: Карман внутри div */
 .pocket-sidebar {
   width: 200px;
   min-width: 200px;
@@ -134,7 +132,7 @@ body, html {
   flex-shrink: 0;
 }
 
-/* Правая колонка: Симметричный балансир такой же ширины для строгого центрирования */
+/* Symmetric right spacer ensuring center workspace grid alignment */
 .overview-balancer {
   width: 200px;
   min-width: 200px;
@@ -143,7 +141,6 @@ body, html {
   pointer-events: none;
 }
 
-/* Центральная колонка: обертка сетки рабочих столов */
 .workspaces-center-wrapper {
   flex: 1;
   min-width: 0;
@@ -153,7 +150,6 @@ body, html {
   justify-content: center;
 }
 
-/* Секция Карман: дизайн идентичен карточкам столов */
 .pocket-section {
   display: flex;
   flex-direction: column;
@@ -167,12 +163,10 @@ body, html {
   transition: transform var(--anim-duration) ease, border-color var(--anim-duration) ease, box-shadow var(--anim-duration) ease;
 }
 
-/* При обычном наведении: серая рамка как в зоне рабочих столов */
 .pocket-section:hover {
   border-color: rgba(255, 255, 255, 0.35);
 }
 
-/* При перетаскивании (dragover): тонкая 1px рамка акцентного цвета кармана */
 .pocket-section.drag-over-pocket {
   background: rgba(28, 28, 31, 0.95);
   border: 1px solid var(--col-pocket-theme);
@@ -180,7 +174,6 @@ body, html {
   outline: none;
 }
 
-/* Надпись КАРМАН: светло-серый цвет */
 .pocket-header {
   font-size: 13px;
   font-weight: 700;
@@ -201,7 +194,6 @@ body, html {
   min-height: 50px;
 }
 
-/* Карточка приложения в кармане */
 .pocket-app-item {
   position: relative;
   display: flex;
@@ -263,7 +255,6 @@ body, html {
   pointer-events: none;
 }
 
-/* Разделительная линия между карманом и столами */
 .pocket-divider {
   width: 1px;
   background: rgba(255, 255, 255, 0.12);
@@ -272,7 +263,6 @@ body, html {
   margin: 2px 0;
 }
 
-/* Всплывающий Preview тултип для кармана (сверху над иконкой) */
 .pocket-preview-popup {
   position: fixed;
   background: rgba(28, 28, 31, 0.95);
@@ -306,7 +296,6 @@ body, html {
   display: block;
 }
 
-/* Прямоугольники рабочих столов */
 #workspaces-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -400,7 +389,6 @@ body, html {
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* Слой живого превью окна внутри карточки стола */
 .card-preview-overlay {
   position: absolute;
   top: 0;
@@ -418,7 +406,6 @@ body, html {
   opacity: 1;
 }
 
-/* Сетка приложений под столом */
 .app-list {
   display: flex;
   flex-wrap: wrap;
@@ -469,7 +456,6 @@ body, html {
   opacity: 0.5;
 }
 
-/* Custom drag preview for multi-drag */
 .drag-multi-ghost {
   position: fixed;
   top: -1000px;
@@ -534,7 +520,6 @@ body, html {
   text-align: center;
 }
 
-/* Контекстное меню в стиле Windows 11 Jump List */
 .jumplist-menu {
   position: fixed;
   z-index: 10000;

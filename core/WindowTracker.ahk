@@ -16,7 +16,6 @@ class WindowTracker {
             , "uint", 0, "uint", 0
             , "uint", 0)
 
-        ; Таймер проверки наведения курсора мыши для TitleBar (30 мс)
         SetTimer(CheckTitleBarHover, 30)
     }
 

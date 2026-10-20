@@ -20,6 +20,13 @@ class CaptureEngine {
         }
     }
 
+    /**
+     * Captures a window's contents and encodes it to a Base64 JPEG data URL.
+     * @param hwnd Window handle to capture.
+     * @param maxW Maximum thumbnail width.
+     * @param maxH Maximum thumbnail height.
+     * @returns {String} Data URL string or empty on failure.
+     */
     static CaptureWindowBase64(hwnd, maxW := 480, maxH := 270) {
         if (!hwnd || !DllCall("IsWindow", "Ptr", hwnd, "Int"))
             return ""
@@ -37,12 +44,12 @@ class CaptureEngine {
         hbm := DllCall("CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", w, "Int", h, "Ptr")
         hbmOld := DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hbm, "Ptr")
 
-        ; 0x00000002 = PW_RENDERFULLCONTENT (поддержка DWM аппаратных окон)
-        ; Этот флаг заставляет DWM отрисовать окно из своего буфера, что не блокирует поток, даже если окно зависло.
+        ; PW_RENDERFULLCONTENT (0x00000002) renders hardware-accelerated DWM windows directly
+        ; from the compositor cache without blocking the thread if the target window hangs.
         rendered := DllCall("PrintWindow", "Ptr", hwnd, "Ptr", hdcMem, "UInt", 2, "Int")
         if (!rendered) {
-            ; Fallback на обычный PrintWindow (который шлет WM_PRINT и может зависнуть),
-            ; поэтому делаем это только если окно отвечает.
+            ; Fallback to standard PrintWindow (which sends WM_PRINT and may hang uncooperative windows);
+            ; execute only if the target process is actively responding.
             if (!DllCall("IsHungAppWindow", "Ptr", hwnd)) {
                 DllCall("PrintWindow", "Ptr", hwnd, "Ptr", hdcMem, "UInt", 0, "Int")
             }
@@ -62,7 +69,6 @@ class CaptureEngine {
         if (!pBitmapOrig)
             return ""
 
-        ; Расчет пропорций миниатюры
         scale := Min(maxW / w, maxH / h, 1.0)
         finalW := Max(1, Round(w * scale))
         finalH := Max(1, Round(h * scale))
@@ -75,7 +81,6 @@ class CaptureEngine {
         DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", pBitmapResized, "Ptr", pGraphicsBuf)
         pGraphics := NumGet(pGraphicsBuf, 0, "Ptr")
 
-        ; Сглаживание при масштабировании
         DllCall("gdiplus\GdipSetInterpolationMode", "Ptr", pGraphics, "Int", 7) ; HighQualityBicubic
         DllCall("gdiplus\GdipDrawImageRectRectI", "Ptr", pGraphics, "Ptr", pBitmapOrig,
             "Int", 0, "Int", 0, "Int", finalW, "Int", finalH,
@@ -91,16 +96,21 @@ class CaptureEngine {
         return base64Str ? "data:image/jpeg;base64," base64Str : ""
     }
 
+    /**
+     * Retrieves a window's icon and encodes it to a Base64 PNG data URL.
+     * @param hwnd Window handle.
+     * @returns {String} Data URL string or empty on failure.
+     */
     static GetWindowIconBase64(hwnd) {
         if (!hwnd || !DllCall("IsWindow", "Ptr", hwnd, "Int"))
             return ""
 
         this.Init()
         hIcon := 0
-        ; Запрос WM_GETICON с таймаутом (SMTO_ABORTIFHUNG = 0x0002, 10ms)
-        DllCall("SendMessageTimeout", "Ptr", hwnd, "UInt", 0x007F, "Ptr", 2, "Ptr", 0, "UInt", 0x0002, "UInt", 10, "Ptr*", &hIcon) ; WM_GETICON (ICON_BIG2)
+        ; Query WM_GETICON with timeout (SMTO_ABORTIFHUNG = 0x0002, 10ms) to avoid hanging
+        DllCall("SendMessageTimeout", "Ptr", hwnd, "UInt", 0x007F, "Ptr", 2, "Ptr", 0, "UInt", 0x0002, "UInt", 10, "Ptr*", &hIcon) ; ICON_BIG2
         if (!hIcon)
-            DllCall("SendMessageTimeout", "Ptr", hwnd, "UInt", 0x007F, "Ptr", 1, "Ptr", 0, "UInt", 0x0002, "UInt", 10, "Ptr*", &hIcon) ; WM_GETICON (ICON_BIG)
+            DllCall("SendMessageTimeout", "Ptr", hwnd, "UInt", 0x007F, "Ptr", 1, "Ptr", 0, "UInt", 0x0002, "UInt", 10, "Ptr*", &hIcon) ; ICON_BIG
         if (!hIcon)
             hIcon := DllCall("GetClassLongPtr", "Ptr", hwnd, "Int", -14, "Ptr") ; GCLP_HICON
 

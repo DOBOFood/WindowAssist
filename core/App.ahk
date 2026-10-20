@@ -21,22 +21,18 @@ class App {
 
         ConfigManager.Load()
 
-        ; Восстановление состояния после Reload
         hasRestoredState := LoadState()
 
         if (!hasRestoredState)
             RecoverAllOffscreenWindows(false)
 
-        ; Регистрация уже существующих окон
         InitExistingWindows()
 
-        ; Инициализация хуков и обработчиков
         WindowTracker.Init()
         HotkeyManager.Init()
         global hasHooksInitialized
         hasHooksInitialized := true
         
-        ; Инициализация кастомного Alt+Tab
         CrossWorkspaceAltTab.Init()
 
         OnExit(ObjBindMethod(this, "CleanExit"))
@@ -49,19 +45,16 @@ class App {
         DllCall("winmm\timeEndPeriod", "uint", 1)
         ReleaseCursorClip()
         
-        ; Закрываем оверлей Overview и выгружаем GDI+
         OverviewController.Close()
         CaptureEngine.Shutdown()
 
-        ; Сохраняем состояние столов и окон в state.json перед выходом
         SaveState()
 
-        ; При перезагрузке не сбрасываем окна на экран
+        ; When reloading the script, leave offscreen window coordinates intact
         if (ExitReason == "Reload") {
             return
         }
 
-        ; При полном выходе: возвращаем окна и рамки
         RestoreAllTitleBars()
         RecoverAllOffscreenWindows(true)
         ConfigManager.ApplyTaskbarVisibility(false)

@@ -9,7 +9,7 @@ MoveWindowWithMouse() {
     CoordMode("Mouse", "Screen")
     MouseGetPos(&startX, &startY, &rawHwnd)
 
-    ; Ждем движения мыши или отпускания кнопки, чтобы отличить клик (Peeker) от перетаскивания (Move)
+    ; Distinguish short click (LayerPeeker) from drag (Window Move)
     dragThreshold := 4
     hasMovedPastThreshold := false
 
@@ -22,7 +22,6 @@ MoveWindowWithMouse() {
         DllCall("Sleep", "uint", 10)
     }
 
-    ; Если кнопка была отпущена до превышения порога перемещения - это клик для LayerPeeker!
     if (!hasMovedPastThreshold) {
         LayerPeeker.OnClick()
         return
@@ -31,14 +30,13 @@ MoveWindowWithMouse() {
     if !rawHwnd
         return
 
-    ; Если клик пришелся на рамку кармана — перенаправляем на целевое окно приложения
+    ; Redirect clicks on the scratchpad outline to the underlying target application
     if PocketManager.IsBorderHwnd(rawHwnd)
         rawHwnd := PocketManager.GetTargetFromBorder(rawHwnd)
         
     winId := DllCall("GetAncestor", "ptr", rawHwnd, "uint", 2, "ptr")
     winId := winId ? winId : rawHwnd
 
-    ; Проверяем, не является ли предок рамкой
     if PocketManager.IsBorderHwnd(winId)
         winId := PocketManager.GetTargetFromBorder(winId)
         
@@ -52,8 +50,7 @@ MoveWindowWithMouse() {
     style := WinGetStyle("ahk_id " winId)
     if (style & 0x01000000) ; WS_MAXIMIZE
         return
-        
-    ; Прерываем Peeker если было начато реальное перетаскивание
+
     LayerPeeker.Reset()
 
     isMovingOrResizing := true
@@ -79,7 +76,6 @@ MoveWindowWithMouse() {
                     , "int", newX, "int", newY, "int", 0, "int", 0
                     , "uint", 0x0215)
 
-                ; Мгновенно синхронизируем рамку окна кармана во время перемещения
                 if PocketManager.IsInPocket(winId)
                     PocketManager.UpdateBorder(winId)
             }
@@ -115,7 +111,6 @@ MoveWindowWithMouse() {
         if ((desktopStates.Has(stateKey) && desktopStates[stateKey] && IsEligibleFloatingWindow(winId)) || isPinned)
             WinSetAlwaysOnTop(true, "ahk_id " winId)
 
-        ; Окно кармана всегда должно оставаться на самом верхнем слое над закрепленными окнами
         PocketManager.EnsurePocketTopmost()
 
         if PocketManager.IsInPocket(winId)
@@ -132,7 +127,7 @@ ResizeWindowWithMouse() {
     CoordMode("Mouse", "Screen")
     MouseGetPos(&startX, &startY, &rawHwnd)
 
-    ; Ждем движения мыши или отпускания кнопки, чтобы отличить клик (Toggle Pin) от изменения размера (Resize)
+    ; Distinguish short click (Pin Toggle) from drag (Window Resize)
     dragThreshold := 4
     hasMovedPastThreshold := false
 
@@ -145,7 +140,6 @@ ResizeWindowWithMouse() {
         DllCall("Sleep", "uint", 10)
     }
 
-    ; Если кнопка была отпущена до превышения порога перемещения - это клик для закрепления (Pin)
     if (!hasMovedPastThreshold) {
         ToggleFloatingWindows()
         return
@@ -154,7 +148,6 @@ ResizeWindowWithMouse() {
     if !rawHwnd
         return
 
-    ; Если клик пришелся на рамку кармана — перенаправляем на целевое окно приложения
     if PocketManager.IsBorderHwnd(rawHwnd)
         rawHwnd := PocketManager.GetTargetFromBorder(rawHwnd)
         
@@ -249,7 +242,6 @@ ResizeWindowWithMouse() {
                     , "int", newX, "int", newY, "int", newW, "int", newH
                     , "uint", 0x0214)
 
-                ; Мгновенно синхронизируем рамку окна кармана во время изменения размера
                 if PocketManager.IsInPocket(winId)
                     PocketManager.UpdateBorder(winId)
             }
@@ -282,7 +274,6 @@ ResizeWindowWithMouse() {
         if ((desktopStates.Has(stateKey) && desktopStates[stateKey] && IsEligibleFloatingWindow(winId)) || isPinned)
             WinSetAlwaysOnTop(true, "ahk_id " winId)
 
-        ; Окно кармана всегда должно оставаться на самом верхнем слое над закрепленными окнами
         PocketManager.EnsurePocketTopmost()
 
         if PocketManager.IsInPocket(winId)

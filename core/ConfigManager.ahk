@@ -197,7 +197,6 @@ class ConfigManager {
             if tb.Has("triggerHeightFloating")
                 triggerHeightFloating := tb["triggerHeightFloating"]
             
-            ; При изменении настроек в рантайме обновляем окна
             if tb.Has("autoHide") && !tb["autoHide"] {
                 for hwnd, info in titleBarInfo {
                     if (info.hidden && WinExist("ahk_id " hwnd))

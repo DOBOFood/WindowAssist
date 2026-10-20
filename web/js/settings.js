@@ -6,7 +6,6 @@ let currentSearchQuery = "";
 let recordingTarget = null; // { actionKey: string }
 let isNumLockHeld = false;  // Tracks NumLock state during recording
 
-// Action Definitions for Hotkeys Tab
 const HOTKEY_ACTIONS = [
   { key: "move_window_prefix", group: "sys", i18nTitle: "act_move_window_prefix", i18nDesc: "act_move_window_prefix_desc" },
   { key: "overview_toggle", group: "overview", i18nTitle: "act_overview_toggle", i18nDesc: "act_overview_toggle_desc" },
@@ -53,7 +52,6 @@ const HOTKEY_ACTIONS = [
   { key: "alt_tab", group: "sys", i18nTitle: "act_alt_tab", i18nDesc: "act_alt_tab_desc" }
 ];
 
-// Helper: Deep property access & update
 function getPropertyByPath(obj, path) {
   const parts = path.split('.');
   let current = obj;
@@ -77,7 +75,6 @@ function setPropertyByPath(obj, path, value) {
   current[parts[parts.length - 1]] = value;
 }
 
-// IPC Handling
 function sendToAhk(action, payload) {
   setSavingStatus(true);
   if (window.ahk && window.ahk.send) {
@@ -99,7 +96,6 @@ function setSavingStatus(isSaving) {
   }
 }
 
-// Localization helper
 function t(key, params) {
   if (!key) return "";
   const dict = (window.I18N && window.I18N[currentLang]) || (window.I18N && window.I18N["en"]) || {};
@@ -134,7 +130,6 @@ function selectLanguage(lang, e) {
   setLanguage(lang);
 }
 
-// Global click listener to close language popup when clicking outside
 document.addEventListener("click", (e) => {
   const wrapper = document.getElementById("lang-dropdown-wrapper");
   if (wrapper && !wrapper.contains(e.target)) {
@@ -157,19 +152,16 @@ function setLanguage(lang) {
   if (optRu) optRu.classList.toggle("active", lang === "ru");
   if (optEn) optEn.classList.toggle("active", lang === "en");
 
-  // Update all DOM elements with data-i18n
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const key = el.getAttribute("data-i18n");
     el.textContent = t(key);
   });
 
-  // Update placeholders
   document.querySelectorAll("[data-i18n-ph]").forEach(el => {
     const key = el.getAttribute("data-i18n-ph");
     el.placeholder = t(key);
   });
 
-  // Update titles
   document.querySelectorAll("[data-i18n-title]").forEach(el => {
     const key = el.getAttribute("data-i18n-title");
     el.title = t(key);
@@ -180,7 +172,6 @@ function setLanguage(lang) {
   sendToAhk("SET_SETTING", { key: "language", value: lang });
 }
 
-// Tab Switching
 function switchTab(tabId) {
   activeTabId = tabId;
   document.querySelectorAll(".nav-item").forEach(item => {
@@ -200,9 +191,7 @@ function updatePageTitle() {
   else if (activeTabId === "tab-appearance") titleEl.textContent = t("tabAppearanceTitle");
 }
 
-// Sync Form with currentConfig
 function syncFormValues() {
-  // General: OSD
   const elFontSize = document.getElementById("gen_osd_fontSize");
   if (elFontSize) elFontSize.value = currentConfig.general.osd.fontSize;
   const elPos = document.getElementById("gen_osd_position");
@@ -213,19 +202,15 @@ function syncFormValues() {
   if (elDelay) elDelay.value = currentConfig.general.osd.hideDelayMs;
   onOsdPositionChange(currentConfig.general.osd.position, false);
 
-  // General: TitleBar
   const elTbAuto = document.getElementById("gen_tb_autoHide");
   if (elTbAuto) elTbAuto.checked = !!currentConfig.general.titleBar.autoHide;
   const elTbDark = document.getElementById("gen_tb_darkTheme");
   if (elTbDark) elTbDark.checked = !!currentConfig.general.titleBar.darkTheme;
 
-  // General: Taskbar
   document.getElementById("gen_tb_hideTaskList").checked = !!currentConfig.general.taskbar.hideTaskList;
 
-  // Appearance: Animations
   document.getElementById("app_animationDurationMs").value = currentConfig.appearance.animationDurationMs;
 
-  // Appearance: Colors
   syncColorControl("appearance.colors.workspaceBorderHover", "col_workspaceBorderHover", "text_col_wsBorder", "box_col_wsBorder");
   syncColorControl("appearance.colors.pocketTheme", "col_pocketTheme", "text_col_pocket", "box_col_pocket");
   syncColorControl("appearance.colors.windowDragPulse", "col_windowDragPulse", "text_col_dragPulse", "box_col_dragPulse");
@@ -234,7 +219,6 @@ function syncFormValues() {
   syncColorControl("appearance.colors.pocketWindowBorder", "col_pocketWindowBorder", "text_col_pocketBorder", "box_col_pocketBorder");
   document.getElementById("app_pocketBorderWidth").value = currentConfig.appearance.colors.pocketBorderWidth;
 
-  // Profiles
   syncProfileSelect();
   renderHotkeysList();
   updateResetButtonsStatus();
@@ -280,7 +264,6 @@ function updateSetting(path, val) {
   sendToAhk("SET_SETTING", { key: path, value: val });
 }
 
-// Reset Logic
 function resetField(path) {
   const defVal = getPropertyByPath(window.DEFAULT_CONFIG, path);
   if (defVal === undefined) return;
@@ -326,7 +309,6 @@ function updateResetButtonsStatus() {
   });
 }
 
-// Profile Management
 function getActiveProfileName() {
   return currentConfig.hotkeys.activeProfile || "default";
 }
@@ -431,7 +413,6 @@ function deleteProfile() {
   sendToAhk("DELETE_KEYBIND_PROFILE", { profile: active });
 }
 
-// Hotkeys Rendering & Management
 function filterHotkeys(query) {
   currentSearchQuery = (query || "").trim().toLowerCase();
   renderHotkeysList();
@@ -444,7 +425,6 @@ function renderHotkeysList() {
   const binds = getActiveProfileBinds();
   const defBinds = window.DEFAULT_CONFIG.hotkeys.profiles["default"] || {};
 
-  // Group actions
   const groups = {
     sys: { title: currentLang === "ru" ? "Системные команды" : "System Commands", items: [] },
     overview: { title: currentLang === "ru" ? "Обзор и навигация" : "Overview & Navigation", items: [] },
@@ -458,7 +438,6 @@ function renderHotkeysList() {
     const desc = t(act.i18nDesc, act.param ? { n: act.param } : null);
     const assignedBinds = binds[act.key] || [];
 
-    // Filter search
     if (currentSearchQuery) {
       const matchTitle = title.toLowerCase().includes(currentSearchQuery);
       const matchDesc = desc.toLowerCase().includes(currentSearchQuery);
@@ -555,7 +534,6 @@ function resetKeybindAction(actionKey) {
   sendToAhk("SET_SETTING", { key: `hotkeys.profiles.${getActiveProfileName()}.${actionKey}`, value: binds[actionKey] });
 }
 
-// Key Recording System
 function startRecording(actionKey) {
   isNumLockHeld = false;
   recordingTarget = { actionKey: actionKey };
@@ -593,11 +571,9 @@ window.addEventListener("keyup", (e) => {
   }
 });
 
-// Захват мыши при записи биндов (колесико, средняя кнопка, ПКМ, ЛКМ)
 window.addEventListener("mousedown", (e) => {
   if (!recordingTarget) return;
 
-  // Если клик по кнопке отмены записи
   if (e.target && e.target.classList.contains("recording-cancel")) {
     return;
   }
@@ -605,7 +581,6 @@ window.addEventListener("mousedown", (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  // Для window_mouse_modifier мышь записывать нельзя - это чистый модификатор
   if (recordingTarget.actionKey === "window_mouse_modifier") {
     return;
   }
@@ -636,7 +611,6 @@ window.addEventListener("wheel", (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  // Для window_mouse_modifier колесико недопустимо
   if (recordingTarget.actionKey === "window_mouse_modifier") {
     return;
   }
@@ -659,13 +633,11 @@ window.addEventListener("keydown", (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  // If user presses Escape alone without modifiers, cancel recording
   if (e.key === "Escape" && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey && !isNumLockHeld) {
     cancelRecording();
     return;
   }
 
-  // Для window_mouse_modifier или move_window_prefix одиночный модификатор может быть самостоятельным биндом
   if (recordingTarget.actionKey === "window_mouse_modifier") {
     let modName = "";
     if (e.key === "NumLock" || e.code === "NumLock") modName = "NumLock";
@@ -687,13 +659,11 @@ window.addEventListener("keydown", (e) => {
     }
   }
 
-  // Treat NumLock as a modifier key!
   if (e.key === "NumLock" || e.code === "NumLock") {
     isNumLockHeld = true;
     return;
   }
 
-  // Modifier-only press -> wait for the non-modifier key
   if (["Control", "Alt", "Shift", "Meta"].includes(e.key)) {
     return;
   }
@@ -722,7 +692,6 @@ window.addEventListener("keydown", (e) => {
   commitRecordedKey(parts.join(" + "));
 });
 
-// AHK -> Web IPC Listener
 if (window.chrome && window.chrome.webview) {
   window.chrome.webview.addEventListener("message", (event) => {
     const msg = event.data;
@@ -737,7 +706,6 @@ if (window.chrome && window.chrome.webview) {
   });
 }
 
-// Initial Boot
 document.addEventListener("DOMContentLoaded", () => {
   setLanguage(currentConfig.language || "en");
   syncFormValues();

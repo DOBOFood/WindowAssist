@@ -14,29 +14,27 @@
         </svg>
       </button>
 
-      <!-- Главная разметка: 3 колонки для строгого центрирования сетки столов внутри контейнера -->
+      <!-- 3-column layout to center workspace grid inside container -->
       <div class="overview-main-layout">
-        <!-- Левая колонка: Карман внутри div -->
+        <!-- Left: Pocket scratchpad sidebar -->
         <div class="pocket-sidebar">
           <div id="pocket-section" class="pocket-section">
             <div class="pocket-header">
               <span data-i18n="overviewPocketHeader">Pocket</span>
             </div>
             <div id="pocket-app-list" class="pocket-app-list">
-              <!-- Элементы кармана -->
             </div>
           </div>
           <div class="pocket-divider"></div>
         </div>
 
-        <!-- Центральная колонка: Прямоугольники рабочих столов (строго по центру экрана) -->
+        <!-- Center: Workspace cards grid -->
         <div class="workspaces-center-wrapper">
           <div id="workspaces-grid">
-            <!-- Столы рендерятся динамически -->
           </div>
         </div>
 
-        <!-- Правая колонка: Симметричный балансир для идеального центрирования -->
+        <!-- Right: Spacer maintaining symmetry -->
         <div class="overview-balancer" aria-hidden="true"></div>
       </div>
 
@@ -44,7 +42,7 @@
     </div>
   </div>
 
-  <!-- Плавающий Preview-попап для кармана -->
+  <!-- Floating preview tooltip for pocket items -->
   <div id="pocket-preview-popup" class="pocket-preview-popup">
     <img id="pocket-preview-img" alt="Preview" />
   </div>
@@ -84,7 +82,6 @@
     let dragGhostEl = null;
     let activeDragHwnds = [];
 
-    // Для превью кармана с задержкой 500мс
     let pocketHoverTimer = null;
     let hoveredPocketHwnd = null;
 
@@ -131,7 +128,6 @@
       e.preventDefault();
     });
 
-    // Прием состояния и событий от AutoHotkey
     if (window.chrome && window.chrome.webview) {
       window.chrome.webview.addEventListener('message', (event) => {
         let data = event.data;
@@ -139,7 +135,7 @@
           try {
             data = JSON.parse(data);
           } catch (e) {
-            console.error('Ошибка парсинга JSON:', e);
+            console.error('Failed to parse JSON:', e);
             return;
           }
         }
@@ -269,7 +265,6 @@
         item.appendChild(icon);
         item.appendChild(title);
 
-        // Клик -> Активация окна кармана поверх всех
         item.addEventListener('click', (e) => {
           if (e.button === 0) {
             closeContextMenu();
@@ -295,7 +290,6 @@
           }
         });
 
-        // Drag Start / End для перемещения из кармана на рабочий стол
         item.addEventListener('dragstart', (e) => {
           closeContextMenu();
           hidePocketPreview();
@@ -330,7 +324,6 @@
           }
         });
 
-        // ПКМ -> Контекстное меню
         item.addEventListener('contextmenu', (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -338,7 +331,6 @@
           showPocketContextMenu(app.hwnd, e.clientX, e.clientY, app.title);
         });
 
-        // Наведение мыши: показ preview сверху над иконкой через 500мс
         item.addEventListener('mouseenter', () => {
           hoveredPocketHwnd = app.hwnd;
           if (pocketHoverTimer) {
@@ -423,7 +415,6 @@
       const actionGroup = document.createElement('div');
       actionGroup.className = 'menu-group';
 
-      // 1. Активировать
       const actItem = document.createElement('div');
       actItem.className = 'menu-item';
       actItem.innerHTML = `<span class="item-icon">👁</span><span class="item-text">${t('overviewShowOnTop')}</span>`;
@@ -433,7 +424,6 @@
       };
       actionGroup.appendChild(actItem);
 
-      // 2. Убрать из кармана
       const remItem = document.createElement('div');
       remItem.className = 'menu-item';
       remItem.innerHTML = `<span class="item-icon">↩</span><span class="item-text">${t('overviewRemoveFromPocket')}</span>`;
@@ -443,11 +433,9 @@
       };
       actionGroup.appendChild(remItem);
 
-      // Разделитель
       const hr = document.createElement('hr');
       actionGroup.appendChild(hr);
 
-      // 3. Закрыть приложение
       const closeItem = document.createElement('div');
       closeItem.className = 'menu-item danger';
       closeItem.innerHTML = `<span class="item-icon">✕</span><span class="item-text">${t('overviewCloseWindow')}</span>`;
