@@ -1,6 +1,25 @@
 // State Management
-let currentConfig = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG));
-let currentLang = "en";
+function loadCachedConfig() {
+  try {
+    const cached = localStorage.getItem("windowassist_config");
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && typeof parsed === "object") {
+        return Object.assign({}, window.DEFAULT_CONFIG, parsed);
+      }
+    }
+  } catch (e) {}
+  return JSON.parse(JSON.stringify(window.DEFAULT_CONFIG));
+}
+
+function saveConfigToStorage() {
+  try {
+    localStorage.setItem("windowassist_config", JSON.stringify(currentConfig));
+  } catch (e) {}
+}
+
+let currentConfig = loadCachedConfig();
+let currentLang = currentConfig.language || "en";
 let activeTabId = "tab-hotkeys";
 let currentSearchQuery = "";
 let recordingTarget = null; // { actionKey: string }
@@ -76,11 +95,13 @@ function setPropertyByPath(obj, path, value) {
 }
 
 function sendToAhk(action, payload) {
-  setSavingStatus(true);
+  if (action !== "SETTINGS_READY" && action !== "START_KEY_RECORDING" && action !== "STOP_KEY_RECORDING") {
+    setSavingStatus(true);
+    setTimeout(() => setSavingStatus(false), 250);
+  }
   if (window.ahk && window.ahk.send) {
     window.ahk.send(Object.assign({ action: action }, payload));
   }
-  setTimeout(() => setSavingStatus(false), 250);
 }
 
 function setSavingStatus(isSaving) {
@@ -141,6 +162,7 @@ function setLanguage(lang) {
   if (lang !== "ru" && lang !== "en") return;
   currentLang = lang;
   currentConfig.language = lang;
+  saveConfigToStorage();
 
   const currentLabel = document.getElementById("lang-current-label");
   if (currentLabel) {
@@ -246,6 +268,7 @@ function onOsdPositionChange(val, save = true) {
 
 function onColorInput(configPath, hex) {
   setPropertyByPath(currentConfig, configPath, hex);
+  saveConfigToStorage();
   syncFormValues();
   sendToAhk("SET_SETTING", { key: configPath, value: hex });
 }
@@ -253,6 +276,7 @@ function onColorInput(configPath, hex) {
 function onHexTextInput(configPath, val) {
   if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
     setPropertyByPath(currentConfig, configPath, val);
+    saveConfigToStorage();
     syncFormValues();
     sendToAhk("SET_SETTING", { key: configPath, value: val });
   }
@@ -260,6 +284,7 @@ function onHexTextInput(configPath, val) {
 
 function updateSetting(path, val) {
   setPropertyByPath(currentConfig, path, val);
+  saveConfigToStorage();
   updateResetButtonsStatus();
   sendToAhk("SET_SETTING", { key: path, value: val });
 }
@@ -271,6 +296,7 @@ function resetField(path) {
   if (path === "general.osd.position") {
     onOsdPositionChange(defVal, false);
   }
+  saveConfigToStorage();
   syncFormValues();
   sendToAhk("SET_SETTING", { key: path, value: defVal });
 }
@@ -280,16 +306,19 @@ function resetActiveTab() {
 
   if (activeTabId === "tab-general") {
     currentConfig.general = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG.general));
+    saveConfigToStorage();
     syncFormValues();
     sendToAhk("SET_SETTING", { key: "general", value: currentConfig.general });
   } else if (activeTabId === "tab-appearance") {
     currentConfig.appearance = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG.appearance));
+    saveConfigToStorage();
     syncFormValues();
     sendToAhk("SET_SETTING", { key: "appearance", value: currentConfig.appearance });
   } else if (activeTabId === "tab-hotkeys") {
     const activeProf = currentConfig.hotkeys.activeProfile || "default";
     const defProf = window.DEFAULT_CONFIG.hotkeys.profiles["default"];
     currentConfig.hotkeys.profiles[activeProf] = JSON.parse(JSON.stringify(defProf));
+    saveConfigToStorage();
     renderHotkeysList();
     sendToAhk("SET_SETTING", { key: `hotkeys.profiles.${activeProf}`, value: currentConfig.hotkeys.profiles[activeProf] });
   }
@@ -338,6 +367,7 @@ function syncProfileSelect() {
 
 function onProfileChange(profName) {
   currentConfig.hotkeys.activeProfile = profName;
+  saveConfigToStorage();
   renderHotkeysList();
   sendToAhk("SWITCH_KEYBIND_PROFILE", { profile: profName });
 }
@@ -354,6 +384,7 @@ function addNewProfile() {
   const initialBinds = JSON.parse(JSON.stringify(defBinds));
   currentConfig.hotkeys.profiles[cleanName] = initialBinds;
   currentConfig.hotkeys.activeProfile = cleanName;
+  saveConfigToStorage();
   syncProfileSelect();
   renderHotkeysList();
   sendToAhk("SAVE_KEYBIND_PROFILE", { profile: cleanName, binds: initialBinds });
@@ -376,6 +407,7 @@ function renameProfile() {
   delete currentConfig.hotkeys.profiles[active];
   currentConfig.hotkeys.profiles[clean] = binds;
   currentConfig.hotkeys.activeProfile = clean;
+  saveConfigToStorage();
   syncProfileSelect();
   renderHotkeysList();
   sendToAhk("RENAME_KEYBIND_PROFILE", { oldName: active, newName: clean });
@@ -394,6 +426,7 @@ function duplicateProfile() {
   const bindsCopy = JSON.parse(JSON.stringify(currentConfig.hotkeys.profiles[active] || {}));
   currentConfig.hotkeys.profiles[clean] = bindsCopy;
   currentConfig.hotkeys.activeProfile = clean;
+  saveConfigToStorage();
   syncProfileSelect();
   renderHotkeysList();
   sendToAhk("SAVE_KEYBIND_PROFILE", { profile: clean, binds: bindsCopy });
@@ -408,6 +441,7 @@ function deleteProfile() {
   if (!confirm(t("confirmDeleteProfile", { name: active }))) return;
   delete currentConfig.hotkeys.profiles[active];
   currentConfig.hotkeys.activeProfile = "default";
+  saveConfigToStorage();
   syncProfileSelect();
   renderHotkeysList();
   sendToAhk("DELETE_KEYBIND_PROFILE", { profile: active });
@@ -521,6 +555,7 @@ function removeKeybind(actionKey, index) {
   const binds = getActiveProfileBinds();
   if (binds[actionKey]) {
     binds[actionKey].splice(index, 1);
+    saveConfigToStorage();
     renderHotkeysList();
     sendToAhk("SET_SETTING", { key: `hotkeys.profiles.${getActiveProfileName()}.${actionKey}`, value: binds[actionKey] });
   }
@@ -530,6 +565,7 @@ function resetKeybindAction(actionKey) {
   const defBinds = window.DEFAULT_CONFIG.hotkeys.profiles["default"] || {};
   const binds = getActiveProfileBinds();
   binds[actionKey] = JSON.parse(JSON.stringify(defBinds[actionKey] || []));
+  saveConfigToStorage();
   renderHotkeysList();
   sendToAhk("SET_SETTING", { key: `hotkeys.profiles.${getActiveProfileName()}.${actionKey}`, value: binds[actionKey] });
 }
@@ -560,6 +596,7 @@ function commitRecordedKey(shortcutString) {
 
   recordingTarget = null;
   isNumLockHeld = false;
+  saveConfigToStorage();
   renderHotkeysList();
   sendToAhk("SET_SETTING", { key: `hotkeys.profiles.${getActiveProfileName()}.${actionKey}`, value: binds[actionKey] });
   sendToAhk("STOP_KEY_RECORDING", {});
@@ -694,12 +731,16 @@ window.addEventListener("keydown", (e) => {
 
 if (window.chrome && window.chrome.webview) {
   window.chrome.webview.addEventListener("message", (event) => {
-    const msg = event.data;
-    if (msg.action === "LOAD_CONFIG" && msg.config) {
+    let msg = event.data;
+    if (typeof msg === "string") {
+      try { msg = JSON.parse(msg); } catch (e) {}
+    }
+    if (msg && msg.action === "LOAD_CONFIG" && msg.config) {
       currentConfig = Object.assign({}, window.DEFAULT_CONFIG, msg.config);
       if (currentConfig.language) {
         currentLang = currentConfig.language;
       }
+      saveConfigToStorage();
       setLanguage(currentLang);
       syncFormValues();
     }
@@ -709,4 +750,5 @@ if (window.chrome && window.chrome.webview) {
 document.addEventListener("DOMContentLoaded", () => {
   setLanguage(currentConfig.language || "en");
   syncFormValues();
+  sendToAhk("SETTINGS_READY", {});
 });
