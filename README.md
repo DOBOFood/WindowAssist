@@ -47,7 +47,7 @@ Press a shortcut to bring up an interactive full-screen canvas displaying all yo
 ### 1. Instant Virtual Desktops & Window Carry
 Switch between desktops with zero transition lag or animations getting in your way. When switching, hold the move key to take your active window with you and place it on your target desktop.
 
-<video src="https://github.com/user-attachments/assets/601da3e5-6836-4cf4-9c65-10cbf5643756" controls="controls" width="100%"></video>
+https://github.com/user-attachments/assets/601da3e5-6836-4cf4-9c65-10cbf5643756
 
 * **Zero-Delay Switching:** Fast desktop transitions without Windows animations.
 * **Independent Monitors:** Each display has its own independent set of desktops.
@@ -59,9 +59,9 @@ Switch between desktops with zero transition lag or animations getting in your w
 ### 2. The Pocket (Quick-Access App Shelf)
 Put any window into the "Pocket" to take it off your regular desktops. Pocketed windows stay ready in the background and can be summoned on top of any active desktop with a single click or shortcut.
 
-<video src="https://github.com/user-attachments/assets/3eecfb7c-4652-4fcd-834e-d22022699759" controls="controls" width="100%"></video>
+https://github.com/user-attachments/assets/3eecfb7c-4652-4fcd-834e-d22022699759
 
-<video src="https://github.com/user-attachments/assets/569d3225-c94b-45f9-965f-92c563c4b42f" controls="controls" width="100%"></video>
+https://github.com/user-attachments/assets/569d3225-c94b-45f9-965f-92c563c4b42f
 
 * **Always One Key Away:** Great for calculators, messengers, note-taking apps, or command lines.
 * **Distinct Highlight:** Pocketed apps feature a subtle colored outline so you know they are in the shelf.
@@ -72,7 +72,7 @@ Put any window into the "Pocket" to take it off your regular desktops. Pocketed 
 ### 3. Anywhere Mouse Move & Resize
 Stop trying to aim your cursor at tiny window headers or 1-pixel borders just to move or resize an application.
 
-<video src="https://github.com/user-attachments/assets/d25daead-d1e1-4dec-b453-c7d0096dc5f1" controls="controls" width="100%"></video>
+https://github.com/user-attachments/assets/d25daead-d1e1-4dec-b453-c7d0096dc5f1
 
 * **Drag Anywhere:** Hold your modifier key and drag <kbd>Left Mouse Button</kbd> anywhere inside a window to move it.
 * **Resize Anywhere:** Hold your modifier key and drag <kbd>Right Mouse Button</kbd> anywhere inside a window to resize from the closest edge or corner.
@@ -82,7 +82,7 @@ Stop trying to aim your cursor at tiny window headers or 1-pixel borders just to
 ### 4. Layer Peeker
 Bring obscured windows forward without clicking around or disrupting your desktop layout.
 
-<video src="https://github.com/user-attachments/assets/f53fac08-63af-4b73-bda2-6bedc51e1047" controls="controls" width="100%"></video>
+https://github.com/user-attachments/assets/f53fac08-63af-4b73-bda2-6bedc51e1047
 
 * **Peek Underneath:** Hold your modifier key and click <kbd>Left Mouse Button</kbd> without dragging to bring forward the window lying directly beneath your cursor.
 * **Z-Order Cycling:** Keep clicking to cycle through all overlapping background windows on the current desktop.
@@ -92,7 +92,7 @@ Bring obscured windows forward without clicking around or disrupting your deskto
 ### 5. Pin Windows on Top
 Keep floating utility windows above all maximized applications with a single shortcut or click.
 
-<video src="https://github.com/user-attachments/assets/cf4046b8-79ba-4554-8bcb-a9261a513b13" controls="controls" width="100%"></video>
+https://github.com/user-attachments/assets/cf4046b8-79ba-4554-8bcb-a9261a513b13
 
 * **Elevated Priority:** Pinned floating windows stay visible over full-screen maximized windows without leaving the workspace.
 * **Quick Toggle:** Toggle pinned states on the fly using <kbd>NumLock</kbd> + click <kbd>RButton</kbd> or a dedicated hotkey.
@@ -102,7 +102,7 @@ Keep floating utility windows above all maximized applications with a single sho
 ### 6. Auto-Hiding Window Title Bars
 Maximize your usable screen real estate by removing top caption bars from windows while keeping them easy to access.
 
-<video src="https://github.com/user-attachments/assets/992d6043-235f-47ca-8bac-839e2aec54f7" controls="controls" width="100%"></video>
+https://github.com/user-attachments/assets/992d6043-235f-47ca-8bac-839e2aec54f7
 
 * **Top-Edge Reveal:** Title bars smoothly reveal when you hover your cursor near the top edge of the window or screen.
 * **Dark Caption Support:** Automatically applies dark styling to native Windows caption bars.
@@ -113,7 +113,7 @@ Maximize your usable screen real estate by removing top caption bars from window
 ### 7. Smart Cross-Desktop Alt+Tab
 Replaces standard task switching with a clean overlay that shows which desktop each application lives on.
 
-<video src="https://github.com/user-attachments/assets/833b1a83-c318-4e42-bd64-e2b934eb158d" controls="controls" width="100%"></video>
+https://github.com/user-attachments/assets/833b1a83-c318-4e42-bd64-e2b934eb158d
 
 * **Desktop Badges:** Clearly labels every card with its workspace (`WS 1`, `WS 2`, etc.).
 * **MRU Order:** Keeps your most recently used windows prioritized at the front of the list.
@@ -123,9 +123,9 @@ Replaces standard task switching with a clean overlay that shows which desktop e
 ### 8. Settings & Interactive Key Recorder
 A modern, built-in settings interface that lets you customize every key, color, and behavior in real time.
 
-<video src="https://github.com/user-attachments/assets/b7900ba6-071c-42e5-b26e-1cdd2f580ce2" controls="controls" width="100%"></video>
+https://github.com/user-attachments/assets/b7900ba6-071c-42e5-b26e-1cdd2f580ce2
 
-<video src="https://github.com/user-attachments/assets/762e965c-3af6-4151-8522-dfd69f56cb17" controls="controls" width="100%"></video>
+https://github.com/user-attachments/assets/762e965c-3af6-4151-8522-dfd69f56cb17
 
 * **Interactive Key Recorder:** Click `+ Add`, press any key, modifier, mouse button, or scroll wheel to bind it immediately.
 * **Custom Modifiers:** Easily switch the default <kbd>NumLock</kbd> modifier to <kbd>CapsLock</kbd>, <kbd>Alt</kbd>, or any other key.
