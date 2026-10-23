@@ -87,9 +87,6 @@ MoveWindowWithMouse() {
     }
 
     isMovingOrResizing := true
-    hHook := 0
-    hookCb := 0
-
     try {
         isPinned := (WinGetExStyle("ahk_id " winId) & 0x8)
         WinGetPos(&origX, &origY, &origW, &origH, "ahk_id " winId)
@@ -100,73 +97,63 @@ MoveWindowWithMouse() {
         savedRestW := origW
         savedRestH := origH
         wasSnappedMax := false
-        lastMoveX := startX, lastMoveY := startY
+        lastCurX := startX, lastCurY := startY
 
-        LowLevelMoveProc(nCode, wParam, lParam) {
-            if (nCode >= 0 && wParam == 0x0200) { ; WM_MOUSEMOVE
-                mX := NumGet(lParam, 0, "int")
-                mY := NumGet(lParam, 4, "int")
-                
-                if (mX != lastMoveX || mY != lastMoveY) {
-                    lastMoveX := mX, lastMoveY := mY
-                    wMon := GetWindowMonitor(winId)
-                    mL := 0, mT := 0, mR := 0, mB := 0
+        wMon := GetWindowMonitor(winId)
+        mL := 0, mT := 0, mR := 0, mB := 0
+        MonitorGet(wMon, &mL, &mT, &mR, &mB)
+
+        isInPocketWin := PocketManager.IsInPocket(winId)
+        checkMonCount := 0
+
+        while GetKeyState("LButton", "P") {
+            MouseGetPos(&curX, &curY)
+
+            checkMonCount++
+            if (checkMonCount >= 30) {
+                checkMonCount := 0
+                newMon := GetWindowMonitor(winId)
+                if (newMon != wMon) {
+                    wMon := newMon
                     MonitorGet(wMon, &mL, &mT, &mR, &mB)
-
-                    if (mY <= mT + 1) {
-                        if (!wasSnappedMax) {
-                            wasSnappedMax := true
-                            DllCall("ShowWindow", "ptr", winId, "int", 3) ; SW_MAXIMIZE
-                        }
-                    } else {
-                        if (wasSnappedMax) {
-                            wasSnappedMax := false
-                            DllCall("ShowWindow", "ptr", winId, "int", 9) ; SW_RESTORE
-                            origW := savedRestW
-                            origH := savedRestH
-                            origX := Round(mX - (origW / 2))
-                            origY := Max(mT, mY - 20)
-                            startX := mX
-                            startY := mY
-                            DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
-                                , "int", origX, "int", origY, "int", origW, "int", origH
-                                , "uint", 0x0214)
-                        }
-
-                        newX := origX + (mX - startX)
-                        newY := origY + (mY - startY)
-                        
-                        DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
-                            , "int", newX, "int", newY, "int", 0, "int", 0
-                            , "uint", 0x4215) ; SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS | SWP_NOREDRAW
-
-                        if PocketManager.IsInPocket(winId)
-                            PocketManager.UpdateBorder(winId)
-                    }
                 }
             }
-            return DllCall("user32\CallNextHookEx", "ptr", 0, "int", nCode, "uptr", wParam, "ptr", lParam, "ptr")
-        }
 
-        hookCb := CallbackCreate(LowLevelMoveProc, "Fast", 3)
-        hHook := DllCall("user32\SetWindowsHookExW", "int", 14, "ptr", hookCb, "ptr", 0, "uint", 0, "ptr") ; WH_MOUSE_LL = 14
+            if (curY <= mT + 1) {
+                if (!wasSnappedMax) {
+                    wasSnappedMax := true
+                    DllCall("ShowWindow", "ptr", winId, "int", 3) ; SW_MAXIMIZE
+                }
+            } else {
+                if (wasSnappedMax) {
+                    wasSnappedMax := false
+                    DllCall("ShowWindow", "ptr", winId, "int", 9) ; SW_RESTORE
+                    origW := savedRestW
+                    origH := savedRestH
+                    origX := Round(curX - (origW / 2))
+                    origY := Max(mT, curY - 20)
+                    startX := curX
+                    startY := curY
+                    lastCurX := curX, lastCurY := curY
+                    DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
+                        , "int", origX, "int", origY, "int", origW, "int", origH
+                        , "uint", 0x0214)
+                }
 
-        msg := Buffer(A_PtrSize == 8 ? 48 : 28, 0)
-        while GetKeyState("LButton", "P") {
-            while DllCall("user32\PeekMessageW", "ptr", msg, "ptr", 0, "uint", 0, "uint", 0, "uint", 1) {
-                DllCall("user32\TranslateMessage", "ptr", msg)
-                DllCall("user32\DispatchMessageW", "ptr", msg)
+                if (curX != lastCurX || curY != lastCurY) {
+                    lastCurX := curX, lastCurY := curY
+                    newX := origX + (curX - startX)
+                    newY := origY + (curY - startY)
+                    
+                    DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
+                        , "int", newX, "int", newY, "int", 0, "int", 0
+                        , "uint", 0x4215) ; SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS | SWP_NOREDRAW
+
+                    if (isInPocketWin)
+                        PocketManager.UpdateBorder(winId)
+                }
             }
             DllCall("Sleep", "uint", 1)
-        }
-
-        if (hHook) {
-            DllCall("user32\UnhookWindowsHookEx", "ptr", hHook)
-            hHook := 0
-        }
-        if (hookCb) {
-            CallbackFree(hookCb)
-            hookCb := 0
         }
 
         MouseGetPos(&endX, &endY)
@@ -225,15 +212,11 @@ MoveWindowWithMouse() {
 
         PocketManager.EnsurePocketTopmost()
 
-        if PocketManager.IsInPocket(winId)
+        if (isInPocketWin)
             PocketManager.UpdateBorder(winId)
 
         SetTimer(() => SaveState(), -300)
     } finally {
-        if (hHook)
-            DllCall("user32\UnhookWindowsHookEx", "ptr", hHook)
-        if (hookCb)
-            CallbackFree(hookCb)
         isMovingOrResizing := false
     }
 }
@@ -311,9 +294,6 @@ ResizeWindowWithMouse() {
     }
         
     isMovingOrResizing := true
-    hHook := 0
-    hookCb := 0
-
     try {
         isPinned := (WinGetExStyle("ahk_id " winId) & 0x8)
         WinGetPos(&origX, &origY, &origW, &origH, "ahk_id " winId)
@@ -340,38 +320,18 @@ ResizeWindowWithMouse() {
         }
 
         minW := 150, minH := 100
-
-        targetX := origX, targetY := origY
-        targetW := origW, targetH := origH
+        lastCurX := startX, lastCurY := startY
         appliedX := origX, appliedY := origY
         appliedW := origW, appliedH := origH
-        hasPendingResize := false
-        isApplying := false
+        isInPocketWin := PocketManager.IsInPocket(winId)
 
-        ApplyResize() {
-            if (!hasPendingResize || isApplying || !WinExist("ahk_id " winId))
-                return
-            isApplying := true
-            hasPendingResize := false
-            appliedX := targetX, appliedY := targetY
-            appliedW := targetW, appliedH := targetH
+        while GetKeyState("RButton", "P") {
+            MouseGetPos(&curX, &curY)
 
-            DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
-                , "int", appliedX, "int", appliedY, "int", appliedW, "int", appliedH
-                , "uint", 0x0214) ; SWP_NOZORDER | SWP_NOACTIVATE
-
-            if PocketManager.IsInPocket(winId)
-                PocketManager.UpdateBorder(winId)
-            isApplying := false
-        }
-
-        LowLevelResizeProc(nCode, wParam, lParam) {
-            if (nCode >= 0 && wParam == 0x0200) { ; WM_MOUSEMOVE
-                mX := NumGet(lParam, 0, "int")
-                mY := NumGet(lParam, 4, "int")
-                
-                dx := mX - startX
-                dy := mY - startY
+            if (curX != lastCurX || curY != lastCurY) {
+                lastCurX := curX, lastCurY := curY
+                dx := curX - startX
+                dy := curY - startY
 
                 if (isLeft) {
                     nW := origW - dx
@@ -407,36 +367,18 @@ ResizeWindowWithMouse() {
                 }
 
                 if (nX != appliedX || nY != appliedY || nW != appliedW || nH != appliedH) {
-                    targetX := nX, targetY := nY
-                    targetW := nW, targetH := nH
-                    hasPendingResize := true
+                    appliedX := nX, appliedY := nY
+                    appliedW := nW, appliedH := nH
+
+                    DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
+                        , "int", appliedX, "int", appliedY, "int", appliedW, "int", appliedH
+                        , "uint", 0x0214) ; SWP_NOZORDER | SWP_NOACTIVATE
+
+                    if (isInPocketWin)
+                        PocketManager.UpdateBorder(winId)
                 }
             }
-            return DllCall("user32\CallNextHookEx", "ptr", 0, "int", nCode, "uptr", wParam, "ptr", lParam, "ptr")
-        }
-
-        hookCb := CallbackCreate(LowLevelResizeProc, "Fast", 3)
-        hHook := DllCall("user32\SetWindowsHookExW", "int", 14, "ptr", hookCb, "ptr", 0, "uint", 0, "ptr") ; WH_MOUSE_LL = 14
-
-        msg := Buffer(A_PtrSize == 8 ? 48 : 28, 0)
-        while GetKeyState("RButton", "P") {
-            while DllCall("user32\PeekMessageW", "ptr", msg, "ptr", 0, "uint", 0, "uint", 0, "uint", 1) {
-                DllCall("user32\TranslateMessage", "ptr", msg)
-                DllCall("user32\DispatchMessageW", "ptr", msg)
-            }
-            ApplyResize()
             DllCall("Sleep", "uint", 1)
-        }
-
-        ApplyResize()
-
-        if (hHook) {
-            DllCall("user32\UnhookWindowsHookEx", "ptr", hHook)
-            hHook := 0
-        }
-        if (hookCb) {
-            CallbackFree(hookCb)
-            hookCb := 0
         }
 
         MouseGetPos(&endX, &endY)
@@ -489,15 +431,11 @@ ResizeWindowWithMouse() {
 
         PocketManager.EnsurePocketTopmost()
 
-        if PocketManager.IsInPocket(winId)
+        if (isInPocketWin)
             PocketManager.UpdateBorder(winId)
 
         SetTimer(() => SaveState(), -300)
     } finally {
-        if (hHook)
-            DllCall("user32\UnhookWindowsHookEx", "ptr", hHook)
-        if (hookCb)
-            CallbackFree(hookCb)
         isMovingOrResizing := false
     }
 }
