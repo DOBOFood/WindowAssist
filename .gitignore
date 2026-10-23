@@ -7,3 +7,4 @@ dist/
 Compiler/
 *.zip
 .repomixignore
+config.json
