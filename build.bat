@@ -56,7 +56,6 @@ if %errorlevel% neq 0 (
 
 xcopy /E /I /Y "assets" "%OUT_DIR%\assets" >nul
 xcopy /E /I /Y "web" "%OUT_DIR%\web" >nul
-copy /Y "config.json" "%OUT_DIR%\config.json" >nul
 copy /Y "Lib\WebView2\64bit\WebView2Loader.dll" "%OUT_DIR%\WebView2Loader.dll" >nul
 xcopy /E /I /Y "Lib\WebView2\64bit" "%OUT_DIR%\Lib\WebView2\64bit" >nul
 
