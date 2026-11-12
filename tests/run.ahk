@@ -395,6 +395,30 @@ themeScript := FileRead(A_ScriptDir "\..\web\js\settings.js", "UTF-8")
 AssertTrue("settings JS applies the system theme", InStr(themeScript, "function applyTheme") > 0)
 AssertTrue("settings JS handles THEME messages", InStr(themeScript, 'msg.action === "THEME"') > 0)
 
+; ---------------------------------------------------------------- Languages
+
+languagesJs := FileRead(A_ScriptDir "\..\web\js\languages.js", "UTF-8")
+AssertEq("twelve languages are offered", CountText(languagesJs, 'code: "'), 12)
+for code in ["ru", "en", "zh-CN", "es", "de", "fr", "pt-BR", "ja", "ko", "it", "pl", "tr"]
+    AssertTrue("language listed " code, InStr(languagesJs, '"' code '"') > 0)
+
+settingsHtmlText := FileRead(A_ScriptDir "\..\web\settings.html", "UTF-8")
+overviewHtmlText := FileRead(A_ScriptDir "\..\web\overview.html", "UTF-8")
+for fileName in ["languages.js", "i18n.zh-CN.js", "i18n.es.js", "i18n.de.js", "i18n.fr.js"
+    , "i18n.pt-BR.js", "i18n.ja.js", "i18n.ko.js", "i18n.it.js", "i18n.pl.js", "i18n.tr.js"] {
+    AssertTrue("settings loads " fileName, InStr(settingsHtmlText, "js/" fileName) > 0)
+}
+for fileName in ["i18n.zh-CN.js", "i18n.ja.js", "i18n.pt-BR.js", "i18n.tr.js"]
+    AssertTrue("overview loads " fileName, InStr(overviewHtmlText, "js/" fileName) > 0)
+
+nodeFound := false
+if (A_ComSpec != "")
+    nodeFound := (RunWait('"' A_ComSpec '" /c where node >nul 2>&1', , "Hide") == 0)
+if nodeFound {
+    i18nExit := RunWait('"' A_ComSpec '" /c node "' A_ScriptDir '\..\tools\check_i18n.js"', , "Hide")
+    AssertEq("translation key sets match English", i18nExit, 0)
+}
+
 ; ------------------------------------------------------- AHK v1 leftovers
 
 ; AHK v1 built-ins that no longer exist in v2. They only produce a VarUnset

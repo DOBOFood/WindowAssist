@@ -43,6 +43,7 @@ const I18N = {
     duplicateProfileSuffix: " (Копия)",
     profileAlreadyExists: "Профиль с таким именем уже существует.",
     defaultProfileName: "По умолчанию",
+    removeBind: "Удалить",
 
     // Hotkey List Groups
     groupHotkeysSys: "Системные команды",
@@ -248,6 +249,7 @@ const I18N = {
     duplicateProfileSuffix: " (Copy)",
     profileAlreadyExists: "A profile with this name already exists.",
     defaultProfileName: "Default",
+    removeBind: "Remove",
 
     // Hotkey List Groups
     groupHotkeysSys: "System Commands",

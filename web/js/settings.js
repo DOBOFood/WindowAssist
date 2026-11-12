@@ -221,21 +221,54 @@ document.addEventListener("click", (e) => {
   }
 });
 
+function renderLanguageOptions() {
+  const popup = document.getElementById("lang-popup");
+  if (!popup) return;
+
+  const languages = window.LANGUAGES || [];
+  const dictionaries = window.I18N || {};
+  popup.innerHTML = "";
+
+  languages.forEach(language => {
+    if (!dictionaries[language.code]) return;
+
+    const option = document.createElement("div");
+    option.className = "lang-option";
+    option.setAttribute("data-lang", language.code);
+
+    const name = document.createElement("span");
+    name.className = "lang-name";
+    name.textContent = language.name;
+
+    const tag = document.createElement("span");
+    tag.className = "lang-code-tag";
+    tag.textContent = language.tag;
+
+    option.appendChild(name);
+    option.appendChild(tag);
+    option.addEventListener("click", (event) => selectLanguage(language.code, event));
+    popup.appendChild(option);
+  });
+
+  setLanguage(currentLang);
+}
+
 function setLanguage(lang) {
-  if (lang !== "ru" && lang !== "en") return;
+  const dictionaries = window.I18N || {};
+  if (!dictionaries[lang]) lang = "en";
+
   currentLang = lang;
   currentConfig.language = lang;
   saveConfigToStorage();
 
+  const meta = (window.LANGUAGES || []).find(language => language.code === lang);
   const currentLabel = document.getElementById("lang-current-label");
-  if (currentLabel) {
-    currentLabel.textContent = lang === "ru" ? "РУС" : "ENG";
-  }
+  if (currentLabel) currentLabel.textContent = meta ? meta.tag : lang.toUpperCase();
 
-  const optRu = document.getElementById("lang-opt-ru");
-  const optEn = document.getElementById("lang-opt-en");
-  if (optRu) optRu.classList.toggle("active", lang === "ru");
-  if (optEn) optEn.classList.toggle("active", lang === "en");
+  document.documentElement.lang = lang;
+  document.querySelectorAll(".lang-option").forEach(option => {
+    option.classList.toggle("active", option.getAttribute("data-lang") === lang);
+  });
 
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const key = el.getAttribute("data-i18n");
@@ -376,11 +409,11 @@ function updateSetting(path, val) {
 }
 
 function exportSettings() {
-  sendToAhk("EXPORT_SETTINGS");
+  sendToAhk("EXPORT_SETTINGS", { title: t("settingsExport") });
 }
 
 function importSettings() {
-  sendToAhk("IMPORT_SETTINGS");
+  sendToAhk("IMPORT_SETTINGS", { title: t("settingsImport") });
 }
 
 function resetField(path) {
@@ -657,7 +690,7 @@ function renderHotkeysList() {
         item.assigned.forEach((bindStr, idx) => {
           html += `<div class="key-chip">
             <kbd>${escapeHtml(bindStr)}</kbd>
-            <span class="chip-remove" onclick="removeKeybind('${item.action.key}', ${idx})" title="${currentLang === 'ru' ? 'Удалить' : 'Remove'}">
+            <span class="chip-remove" onclick="removeKeybind('${item.action.key}', ${idx})" title="${escapeHtml(t("removeBind"))}">
               <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
             </span>
           </div>`;
@@ -916,7 +949,7 @@ document.addEventListener("DOMContentLoaded", () => {
     accent: "#0078D7",
     os: document.documentElement.getAttribute("data-os") || "win11"
   });
-  setLanguage(currentConfig.language || "en");
+  renderLanguageOptions();
   syncFormValues();
   sendToAhk("SETTINGS_READY", {});
 });
