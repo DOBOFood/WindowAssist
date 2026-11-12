@@ -187,6 +187,41 @@
                   </button>
                 </div>
               </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="windowMoverKeyboardStep">Шаг клавиатурного переноса (px)</div>
+                  <div class="setting-desc" data-i18n="windowMoverKeyboardStep_desc">На сколько пикселей окно сдвигается или меняет размер за одно нажатие клавиши.</div>
+                </div>
+                <div class="setting-control-group">
+                  <input type="number" id="gen_wm_keyboardStep" class="input-number" min="1" max="200" step="1" onchange="updateSetting('general.windowMover.keyboardStep', parseInt(this.value, 10))">
+                  <button class="btn-reset" onclick="resetField('general.windowMover.keyboardStep')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Startup -->
+          <div class="settings-group">
+            <div class="group-title" data-i18n="groupStartup">Запуск приложения</div>
+            <div class="group-cards">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="autostartEnabled">Запускать при входе в систему</div>
+                  <div class="setting-desc" data-i18n="autostartEnabled_desc">Создаёт задачу планировщика с правами администратора, поэтому при входе не появляется запрос UAC.</div>
+                </div>
+                <div class="setting-control-group">
+                  <label class="switch">
+                    <input type="checkbox" id="gen_autostart" onchange="updateSetting('general.autostart.enabled', this.checked)">
+                    <span class="slider"></span>
+                  </label>
+                  <button class="btn-reset" onclick="resetField('general.autostart.enabled')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 

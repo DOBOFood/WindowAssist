@@ -83,6 +83,14 @@ const HOTKEY_ACTIONS = [
   { key: "window_close", group: "window", i18nTitle: "act_window_close", i18nDesc: "act_window_close_desc" },
   { key: "window_minimize", group: "window", i18nTitle: "act_window_minimize", i18nDesc: "act_window_minimize_desc" },
   { key: "window_pin", group: "window", i18nTitle: "act_window_pin", i18nDesc: "act_window_pin_desc" },
+  { key: "window_move_left", group: "window", i18nTitle: "act_window_move_left", i18nDesc: "act_window_move_left_desc" },
+  { key: "window_move_right", group: "window", i18nTitle: "act_window_move_right", i18nDesc: "act_window_move_right_desc" },
+  { key: "window_move_up", group: "window", i18nTitle: "act_window_move_up", i18nDesc: "act_window_move_up_desc" },
+  { key: "window_move_down", group: "window", i18nTitle: "act_window_move_down", i18nDesc: "act_window_move_down_desc" },
+  { key: "window_resize_wider", group: "window", i18nTitle: "act_window_resize_wider", i18nDesc: "act_window_resize_wider_desc" },
+  { key: "window_resize_narrower", group: "window", i18nTitle: "act_window_resize_narrower", i18nDesc: "act_window_resize_narrower_desc" },
+  { key: "window_resize_taller", group: "window", i18nTitle: "act_window_resize_taller", i18nDesc: "act_window_resize_taller_desc" },
+  { key: "window_resize_shorter", group: "window", i18nTitle: "act_window_resize_shorter", i18nDesc: "act_window_resize_shorter_desc" },
   { key: "window_mouse_modifier", group: "window", i18nTitle: "act_window_mouse_modifier", i18nDesc: "act_window_mouse_modifier_desc" },
 
   // System
@@ -251,6 +259,16 @@ function syncFormValues() {
     const defaultSafeZone = getPropertyByPath(window.DEFAULT_CONFIG, "general.windowMover.safeZone");
     elSafeZone.value = (safeZone !== undefined) ? safeZone : (defaultSafeZone !== undefined ? defaultSafeZone : 8);
   }
+
+  const elKeyboardStep = document.getElementById("gen_wm_keyboardStep");
+  if (elKeyboardStep) {
+    const step = getPropertyByPath(currentConfig, "general.windowMover.keyboardStep");
+    const defaultStep = getPropertyByPath(window.DEFAULT_CONFIG, "general.windowMover.keyboardStep");
+    elKeyboardStep.value = (step !== undefined) ? step : (defaultStep !== undefined ? defaultStep : 20);
+  }
+
+  const elAutostart = document.getElementById("gen_autostart");
+  if (elAutostart) elAutostart.checked = !!getPropertyByPath(currentConfig, "general.autostart.enabled");
 
   const elTbAuto = document.getElementById("gen_tb_autoHide");
   if (elTbAuto) elTbAuto.checked = !!currentConfig.general.titleBar.autoHide;
@@ -766,6 +784,9 @@ if (window.chrome && window.chrome.webview) {
     if (msg && msg.action === "APP_INFO") {
       const versionEl = document.getElementById("app-version");
       if (versionEl) versionEl.textContent = "v" + msg.version;
+    }
+    if (msg && msg.action === "AUTOSTART_FAILED") {
+      alert(t("autostartFailed"));
     }
     if (msg && msg.action === "LOAD_CONFIG" && msg.config) {
       currentConfig = deepMerge(window.DEFAULT_CONFIG, msg.config);

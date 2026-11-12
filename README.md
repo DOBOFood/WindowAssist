@@ -131,6 +131,7 @@ https://github.com/user-attachments/assets/762e965c-3af6-4151-8522-dfd69f56cb17
 * **Custom Modifiers:** Easily switch the default <kbd>NumLock</kbd> modifier to <kbd>CapsLock</kbd>, <kbd>Alt</kbd>, or any other key.
 * **Multiple Profiles:** Create, duplicate, rename, or restore different shortcut setups.
 * **Bilingual UI:** Native support for both English and Russian.
+* **Run at sign-in:** Optional autostart through a Task Scheduler task with administrator rights, so no UAC prompt appears at logon.
 
 ---
 
@@ -146,6 +147,8 @@ https://github.com/user-attachments/assets/762e965c-3af6-4151-8522-dfd69f56cb17
 | **Previous / Next Desktop** | <kbd>NumLock</kbd> + <kbd>Z</kbd> / <kbd>X</kbd> *(or <kbd>WheelUp</kbd> / <kbd>WheelDown</kbd>)* |
 | **Move Window Anywhere** | Hold <kbd>NumLock</kbd> + Drag <kbd>LButton</kbd> |
 | **Resize Window Anywhere** | Hold <kbd>NumLock</kbd> + Drag <kbd>RButton</kbd> |
+| **Move Window (keyboard)** | <kbd>NumLock</kbd> + <kbd>Alt</kbd> + <kbd>←</kbd> / <kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd> |
+| **Resize Window (keyboard)** | <kbd>NumLock</kbd> + <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd> |
 | **Layer Peeker (Cycle overlapping)** | <kbd>NumLock</kbd> + Click <kbd>LButton</kbd> |
 | **Pin Window on Top** | <kbd>NumLock</kbd> + Click <kbd>RButton</kbd> |
 | **Add / Remove Window to Pocket** | <kbd>NumLock</kbd> + <kbd>C</kbd> |

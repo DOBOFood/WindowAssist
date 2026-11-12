@@ -26,6 +26,14 @@ class ConfigManager {
                         "window_minimize", ["NumLock + A"],
                         "window_mouse_modifier", ["NumLock"],
                         "window_pin", ["NumLock + E"],
+                        "window_move_left", ["NumLock + Alt + Left"],
+                        "window_move_right", ["NumLock + Alt + Right"],
+                        "window_move_up", ["NumLock + Alt + Up"],
+                        "window_move_down", ["NumLock + Alt + Down"],
+                        "window_resize_wider", ["NumLock + Alt + Shift + Right"],
+                        "window_resize_narrower", ["NumLock + Alt + Shift + Left"],
+                        "window_resize_taller", ["NumLock + Alt + Shift + Down"],
+                        "window_resize_shorter", ["NumLock + Alt + Shift + Up"],
                         "workspace_move_1", ["NumLock + Shift + 1"],
                         "workspace_move_2", ["NumLock + Shift + 2"],
                         "workspace_move_3", ["NumLock + Shift + 3"],
@@ -57,7 +65,11 @@ class ConfigManager {
                     "hideDelayMs", 400
                 ),
                 "windowMover", Map(
-                    "safeZone", 8
+                    "safeZone", 8,
+                    "keyboardStep", 20
+                ),
+                "autostart", Map(
+                    "enabled", false
                 ),
                 "titleBar", Map(
                     "autoHide", true,

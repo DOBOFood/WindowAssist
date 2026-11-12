@@ -3,6 +3,10 @@
 class WindowMover {
     static DefaultSafeZone := 8
     static MaxSafeZone := 100
+    static DefaultKeyboardStep := 20
+    static MaxKeyboardStep := 200
+    static MinWidth := 200
+    static MinHeight := 120
 
     ; Cursor movement (px) required before a drag or resize begins.
     ; Acts as a click-safe dead zone for LayerPeeker and plain clicks.
@@ -14,6 +18,17 @@ class WindowMover {
             value := this.DefaultSafeZone
         }
         return Max(1, Min(this.MaxSafeZone, value))
+    }
+
+    ; Distance (px) one keyboard move/resize action shifts the window.
+    static KeyboardStepPx() {
+        value := ConfigManager.Get("general.windowMover.keyboardStep", this.DefaultKeyboardStep)
+        try {
+            value := Integer(value)
+        } catch {
+            value := this.DefaultKeyboardStep
+        }
+        return Max(1, Min(this.MaxKeyboardStep, value))
     }
 }
 
@@ -470,6 +485,108 @@ ResizeWindowWithMouse() {
             PocketManager.UpdateBorder(winId)
 
         SetTimer(() => SaveState(), -300)
+    } finally {
+        isMovingOrResizing := false
+    }
+}
+
+; ------------------------------------------------------------------------------
+; Keyboard move / resize of the active window
+; ------------------------------------------------------------------------------
+
+EnsureActiveWindowSize() {
+    winId := WinExist("A")
+    if !winId || IsGameOrExclusiveWindow(winId)
+        return 0
+
+    style := WinGetStyle("ahk_id " winId)
+    if ((style & 0x01000000) || WinGetMinMax("ahk_id " winId) == 1) {
+        try DllCall("ShowWindow", "ptr", winId, "int", 9) ; SW_RESTORE
+    }
+    return winId
+}
+
+VirtualScreenBounds() {
+    left := SysGet(76)    ; SM_XVIRTUALSCREEN
+    top := SysGet(77)     ; SM_YVIRTUALSCREEN
+    width := SysGet(78)   ; SM_CXVIRTUALSCREEN
+    height := SysGet(79)  ; SM_CYVIRTUALSCREEN
+    return {left: left, top: top, right: left + width, bottom: top + height}
+}
+
+SaveKeyboardGeometry(winId, wx, wy, ww, wh) {
+    global wsWindows, titleBarInfo
+
+    if wsWindows.Has(winId) {
+        wsWindows[winId].isMax := false
+        wsWindows[winId].x := wx, wsWindows[winId].y := wy
+        wsWindows[winId].w := ww, wsWindows[winId].h := wh
+        SaveWindowProps(winId, wsWindows[winId])
+        SetTimer(() => SaveState(), -300)
+    }
+
+    if titleBarInfo.Has(winId)
+        titleBarInfo[winId].boundsValid := false
+
+    if PocketManager.IsInPocket(winId)
+        PocketManager.UpdateBorder(winId)
+}
+
+MoveActiveWindowBy(dx, dy) {
+    global isMovingOrResizing
+
+    winId := EnsureActiveWindowSize()
+    if !winId
+        return
+
+    wx := 0, wy := 0, ww := 0, wh := 0
+    WinGetPos(&wx, &wy, &ww, &wh, "ahk_id " winId)
+    if (ww <= 0 || wh <= 0)
+        return
+
+    bounds := VirtualScreenBounds()
+    newX := wx + dx
+    newY := wy + dy
+    ; Keep the frame inside the virtual desktop so it cannot be lost off-screen,
+    ; but allow moving across monitors.
+    newX := Max(bounds.left, Min(bounds.right - ww, newX))
+    newY := Max(bounds.top, Min(bounds.bottom - wh, newY))
+
+    isMovingOrResizing := true
+    try {
+        DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
+            , "int", newX, "int", newY, "int", 0, "int", 0
+            , "uint", 0x0015) ; SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
+        SaveKeyboardGeometry(winId, newX, newY, ww, wh)
+    } finally {
+        isMovingOrResizing := false
+    }
+}
+
+ResizeActiveWindowBy(dw, dh) {
+    global isMovingOrResizing
+
+    winId := EnsureActiveWindowSize()
+    if !winId
+        return
+
+    wx := 0, wy := 0, ww := 0, wh := 0
+    WinGetPos(&wx, &wy, &ww, &wh, "ahk_id " winId)
+    if (ww <= 0 || wh <= 0)
+        return
+
+    bounds := VirtualScreenBounds()
+    newW := Max(WindowMover.MinWidth, ww + dw)
+    newH := Max(WindowMover.MinHeight, wh + dh)
+    newW := Min(newW, bounds.right - wx)
+    newH := Min(newH, bounds.bottom - wy)
+
+    isMovingOrResizing := true
+    try {
+        DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
+            , "int", 0, "int", 0, "int", newW, "int", newH
+            , "uint", 0x0016) ; SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE
+        SaveKeyboardGeometry(winId, wx, wy, newW, newH)
     } finally {
         isMovingOrResizing := false
     }

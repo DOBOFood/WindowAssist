@@ -19,6 +19,9 @@ const DEFAULT_CONFIG = {
       "enabled": 1,
       "showWorkspaceBadge": 1
     },
+    "autostart": {
+      "enabled": 0
+    },
     "osd": {
       "fontSize": 13,
       "hideDelayMs": 400,
@@ -36,6 +39,7 @@ const DEFAULT_CONFIG = {
       "visibleHeight": 40
     },
     "windowMover": {
+      "keyboardStep": 20,
       "safeZone": 8
     }
   },
@@ -80,8 +84,32 @@ const DEFAULT_CONFIG = {
         "window_mouse_modifier": [
           "NumLock"
         ],
+        "window_move_down": [
+          "NumLock + Alt + Down"
+        ],
+        "window_move_left": [
+          "NumLock + Alt + Left"
+        ],
+        "window_move_right": [
+          "NumLock + Alt + Right"
+        ],
+        "window_move_up": [
+          "NumLock + Alt + Up"
+        ],
         "window_pin": [
           "NumLock + E"
+        ],
+        "window_resize_narrower": [
+          "NumLock + Alt + Shift + Left"
+        ],
+        "window_resize_shorter": [
+          "NumLock + Alt + Shift + Up"
+        ],
+        "window_resize_taller": [
+          "NumLock + Alt + Shift + Down"
+        ],
+        "window_resize_wider": [
+          "NumLock + Alt + Shift + Right"
         ],
         "workspace_move_1": [
           "NumLock + Shift + 1"

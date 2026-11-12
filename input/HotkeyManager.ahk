@@ -37,6 +37,14 @@ class ActionCatalog {
             "window_mouse_modifier", Map("type", "prefix"),
             "window_mouse_move", () => MoveWindowWithMouse(),
             "window_mouse_resize", () => ResizeWindowWithMouse(),
+            "window_move_left", () => MoveActiveWindowBy(-WindowMover.KeyboardStepPx(), 0),
+            "window_move_right", () => MoveActiveWindowBy(WindowMover.KeyboardStepPx(), 0),
+            "window_move_up", () => MoveActiveWindowBy(0, -WindowMover.KeyboardStepPx()),
+            "window_move_down", () => MoveActiveWindowBy(0, WindowMover.KeyboardStepPx()),
+            "window_resize_wider", () => ResizeActiveWindowBy(WindowMover.KeyboardStepPx(), 0),
+            "window_resize_narrower", () => ResizeActiveWindowBy(-WindowMover.KeyboardStepPx(), 0),
+            "window_resize_taller", () => ResizeActiveWindowBy(0, WindowMover.KeyboardStepPx()),
+            "window_resize_shorter", () => ResizeActiveWindowBy(0, -WindowMover.KeyboardStepPx()),
             "open_settings", () => OpenSettingsWindow(),
             "reload_script", () => Reload(),
             "panic_key", () => HotkeyManager.TriggerPanic(),
@@ -474,6 +482,14 @@ SettingsIPCHandler(data, webInst) {
             keyPath := data["key"]
             val := data["value"]
             ConfigManager.Set(keyPath, val)
+
+            if (keyPath == "general.autostart.enabled" && !AutostartManager.Apply(val)) {
+                ConfigManager.Set(keyPath, !val)
+                if (webInst) {
+                    WebViewManager.Send(webInst, Map("action", "LOAD_CONFIG", "config", ConfigManager.configData))
+                    WebViewManager.Send(webInst, Map("action", "AUTOSTART_FAILED"))
+                }
+            }
 
             activeProf := ConfigManager.Get("hotkeys.activeProfile", "default")
             if InStr(keyPath, "hotkeys.profiles." activeProf) || InStr(keyPath, "hotkeys.activeProfile") {

@@ -13,6 +13,7 @@
 #Include ..\core\Globals.ahk
 #Include ..\core\App.ahk
 #Include ..\core\ErrorLogger.ahk
+#Include ..\core\Autostart.ahk
 #Include ..\core\ConfigManager.ahk
 #Include ..\modules\Workspaces\WindowMover.ahk
 
@@ -64,6 +65,25 @@ AssertEq("safe zone falls back on garbage", WindowMover.SafeZonePx(), 8)
 
 SetSafeZone(7.9)
 AssertEq("safe zone truncates fractions", WindowMover.SafeZonePx(), 7)
+
+SetKeyboardStep(value) {
+    ConfigManager.configData := Map("general", Map("windowMover", Map("keyboardStep", value)))
+}
+
+ConfigManager.configData := Map()
+AssertEq("keyboard step default", WindowMover.KeyboardStepPx(), 20)
+
+SetKeyboardStep(35)
+AssertEq("keyboard step configured", WindowMover.KeyboardStepPx(), 35)
+
+SetKeyboardStep(0)
+AssertEq("keyboard step clamps low", WindowMover.KeyboardStepPx(), 1)
+
+SetKeyboardStep(1000)
+AssertEq("keyboard step clamps high", WindowMover.KeyboardStepPx(), 200)
+
+SetKeyboardStep("abc")
+AssertEq("keyboard step falls back on garbage", WindowMover.KeyboardStepPx(), 20)
 
 ; ------------------------------------------------------------------ Get paths
 
@@ -130,6 +150,30 @@ AssertTrue("defaults carry configVersion", defaults.Has("configVersion"))
 AssertTrue("defaults have no legacy titleBar", !defaults.Has("titleBar"))
 AssertTrue("defaults have no legacy altTab", !defaults.Has("altTab"))
 AssertEq("visibleHeight lives in general", defaults["general"]["titleBar"]["visibleHeight"], 40)
+AssertTrue("keyboard step default", defaults["general"]["windowMover"]["keyboardStep"] == 20)
+AssertTrue("autostart default is off", !defaults["general"]["autostart"]["enabled"])
+
+keyboardActions := [
+    "window_move_left", "window_move_right", "window_move_up", "window_move_down",
+    "window_resize_wider", "window_resize_narrower", "window_resize_taller", "window_resize_shorter"
+]
+defaultBinds := defaults["hotkeys"]["profiles"]["default"]
+for actionKey in keyboardActions
+    AssertTrue("default binding " actionKey, defaultBinds.Has(actionKey) && defaultBinds[actionKey].Length > 0)
+
+settingsJs := FileRead(A_ScriptDir "\..\web\js\settings.js", "UTF-8")
+for actionKey in keyboardActions
+    AssertTrue("settings list " actionKey, InStr(settingsJs, '"' actionKey '"') > 0)
+
+; ------------------------------------------------------------- Autostart XML
+
+taskXml := AutostartManager.BuildTaskXml()
+AssertTrue("autostart xml declares task", InStr(taskXml, "<Task version=") > 0)
+AssertTrue("autostart runs elevated", InStr(taskXml, "<RunLevel>HighestAvailable</RunLevel>") > 0)
+AssertTrue("autostart triggers on logon", InStr(taskXml, "<LogonTrigger>") > 0)
+AssertTrue("autostart command points at the app", InStr(taskXml, "<Command>" AutostartManager.ExecCommand()) > 0)
+if !A_IsCompiled
+    AssertTrue("autostart arguments run the script", InStr(taskXml, AutostartManager.EscapeXml(A_ScriptFullPath)) > 0)
 
 jsDefaults := FileRead(A_ScriptDir "\..\web\js\defaults.js", "UTF-8")
 AssertTrue("generated web defaults carry configVersion", InStr(jsDefaults, '"configVersion": ' ConfigManager.SchemaVersion) > 0)
@@ -159,7 +203,11 @@ CountText(haystack, needle) {
 i18nText := FileRead(A_ScriptDir "\..\web\js\i18n.js", "UTF-8")
 for key in ["profileAlreadyExists", "defaultProfileName", "groupHotkeysSys",
             "groupHotkeysOverview", "groupHotkeysPocket", "groupHotkeysWorkspaces",
-            "groupHotkeysWindow"] {
+            "groupHotkeysWindow", "windowMoverKeyboardStep", "groupStartup",
+            "autostartEnabled", "autostartFailed",
+            "act_window_move_left", "act_window_move_right", "act_window_move_up",
+            "act_window_move_down", "act_window_resize_wider", "act_window_resize_narrower",
+            "act_window_resize_taller", "act_window_resize_shorter"] {
     count := CountText(i18nText, key ":")
     AssertEq("i18n key " key " exists in ru and en", count, 2)
 }
