@@ -618,6 +618,7 @@ GetWindowMonitor(hwnd) {
 
 SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
     global isSwitchingWorkspace, lastSwitchTime, maxWorkspacesPerMon, currentWorkspaces, wsWindows, desktopStates
+    ErrorLogger.Record("switch workspace mon=" targetMon " ws=" targetWs)
     isSwitchingWorkspace := true
     lastSwitchTime := A_TickCount
     ReleaseCursorClip()

@@ -254,6 +254,7 @@ class HotkeyManager {
             actionFn := ActionCatalog.Get(actionKey)
             if (!actionFn)
                 continue
+            actionFn := this._WithLogging(actionKey, actionFn)
 
             allowMovePrefix := (actionKey = "workspace_prev" || actionKey = "workspace_next" || SubStr(actionKey, 1, 17) = "workspace_switch_")
 
@@ -272,6 +273,10 @@ class HotkeyManager {
         for item in delayedBinds {
             this._RegisterSingle(item.desc["key"], item.desc["cond"], item.fn, item.scStr)
         }
+    }
+
+    static _WithLogging(actionKey, actionFn) {
+        return () => (ErrorLogger.Record("hotkey " actionKey), actionFn())
     }
 
     static _RegisterSingle(key, cond, actionFn, scStr) {

@@ -6,9 +6,24 @@ class ErrorLogger {
     static fileName    := "error.log"
     static maxBytes    := 512 * 1024
     static fallbackDir := "WindowAssist"
+    static maxActions  := 20
+    static actions     := []
+    static startedAt   := A_TickCount
 
     static Init() {
         OnError(ObjBindMethod(this, "Handle"))
+    }
+
+    /**
+     * Remembers what the app was doing, so an uncaught error can be reproduced.
+     * Cheap: one string push per action, capped at maxActions.
+     */
+    static Record(action) {
+        try {
+            this.actions.Push(FormatTime(A_Now, "HH:mm:ss") " " action)
+            if (this.actions.Length > this.maxActions)
+                this.actions.RemoveAt(1)
+        }
     }
 
     static Handle(err, mode) {
@@ -38,7 +53,87 @@ class ErrorLogger {
         text .= "AutoHotkey: " A_AhkVersion " (" (A_PtrSize * 8) "-bit)`n"
         if (A_ThisHotkey != "")
             text .= "Hotkey: " A_ThisHotkey "`n"
+        text .= this.Context()
         return text
+    }
+
+    ; Everything here is best-effort: a failing probe must never break the log.
+    static Context() {
+        text := "`n--- Context ---`n"
+        text .= "Version: " this.AppVersion() "`n"
+        text .= "OS: " this.OSVersion() "`n"
+        text .= "Uptime: " this.Uptime() "`n"
+        text .= "Active window: " this.ActiveWindow() "`n"
+        text .= "Monitors: " this.Monitors() "`n"
+        text .= "Workspaces: " this.Workspaces() "`n"
+        text .= "Recent actions:`n"
+        if (this.actions.Length == 0) {
+            text .= "  (none)`n"
+        } else {
+            for action in this.actions
+                text .= "  " action "`n"
+        }
+        return text
+    }
+
+    static AppVersion() {
+        try return App.Version
+        catch
+            return "unknown"
+    }
+
+    static OSVersion() {
+        try {
+            version := RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "DisplayVersion")
+            build := RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "CurrentBuildNumber")
+            return A_OSVersion " " version " (build " build ")"
+        } catch
+            return A_OSVersion
+    }
+
+    static Uptime() {
+        elapsed := A_TickCount - this.startedAt
+        return Format("{:.1f}s", elapsed / 1000)
+    }
+
+    static ActiveWindow() {
+        try {
+            hwnd := WinExist("A")
+            if !hwnd
+                return "(none)"
+            pid := WinGetPID("ahk_id " hwnd)
+            process := ""
+            try process := ProcessGetName(pid)
+            return '"' WinGetTitle("ahk_id " hwnd) '" class=' WinGetClass("ahk_id " hwnd)
+                . " pid=" pid (process != "" ? " (" process ")" : "")
+        } catch
+            return "unavailable"
+    }
+
+    static Monitors() {
+        try {
+            count := MonitorGetCount()
+            primary := MonitorGetPrimary()
+            text := count " (primary " primary ")"
+            Loop count {
+                mL := 0, mT := 0, mR := 0, mB := 0
+                if MonitorGet(A_Index, &mL, &mT, &mR, &mB)
+                    text .= "`n  #" A_Index ": " (mR - mL) "x" (mB - mT) " at " mL "," mT
+            }
+            return text
+        } catch
+            return "unavailable"
+    }
+
+    static Workspaces() {
+        try {
+            global currentWorkspaces, isMovingOrResizing, isPanicMode
+            text := ""
+            for index, workspace in currentWorkspaces
+                text .= (text != "" ? ", " : "") "mon" index "=" workspace
+            return text " (moving=" (isMovingOrResizing ? 1 : 0) ", panic=" (isPanicMode ? 1 : 0) ")"
+        } catch
+            return "unavailable"
     }
 
     static Write(text) {

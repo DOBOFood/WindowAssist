@@ -35,6 +35,7 @@ MoveWindowWithMouse() {
     }
 
     if (!hasMovedPastThreshold) {
+        ErrorLogger.Record("peeker click at " startX "," startY)
         LayerPeeker.OnClick()
         return
     }
@@ -57,6 +58,8 @@ MoveWindowWithMouse() {
     winClass := StrLower(WinGetClass("ahk_id " winId))
     if Rules.systemClasses.Has(winClass)
         return
+
+    ErrorLogger.Record("move start hwnd=" winId)
 
     LayerPeeker.Reset()
 
@@ -286,6 +289,8 @@ ResizeWindowWithMouse() {
     winClass := StrLower(WinGetClass("ahk_id " winId))
     if Rules.systemClasses.Has(winClass)
         return
+        
+    ErrorLogger.Record("resize start hwnd=" winId)
         
     style := WinGetStyle("ahk_id " winId)
     isMaxNow := (style & 0x01000000) || (WinGetMinMax("ahk_id " winId) == 1)
