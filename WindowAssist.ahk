@@ -19,6 +19,7 @@ A_MaxHotkeysPerInterval := 999999
 
 ; Directives for Ahk2Exe Compiler
 ;@Ahk2Exe-SetName WindowAssist
+;@Ahk2Exe-SetVersion 1.0.0.0
 ;@Ahk2Exe-SetMainIcon assets\app.ico
 ;@Ahk2Exe-UpdateManifest 1
 

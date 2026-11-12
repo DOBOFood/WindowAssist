@@ -2,7 +2,19 @@
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
-set "OUT_DIR=dist"
+set "APP_NAME=WindowAssist"
+
+rem Single source of truth for the version is core\App.ahk.
+set "APP_VERSION="
+for /f "tokens=4" %%V in ('findstr /c:"static Version := " core\App.ahk') do set "APP_VERSION=%%~V"
+if not defined APP_VERSION (
+    echo [ERROR] Could not read App.Version from core\App.ahk
+    pause
+    exit /b 1
+)
+
+set "OUT_DIR=dist\%APP_NAME%-v%APP_VERSION%"
+if exist "%OUT_DIR%" rd /s /q "%OUT_DIR%"
 if not exist "%OUT_DIR%" mkdir "%OUT_DIR%"
 
 set "BASE_BIN="
@@ -45,8 +57,8 @@ if not exist "%AHK2EXE%" (
     exit /b 1
 )
 
-echo [INFO] Compiling WindowAssist.exe...
-"%AHK2EXE%" /in "WindowAssist.ahk" /out "%OUT_DIR%\WindowAssist.exe" /icon "assets\app.ico" /base "%BASE_BIN%"
+echo [INFO] Compiling %APP_NAME% v%APP_VERSION%...
+"%AHK2EXE%" /in "WindowAssist.ahk" /out "%OUT_DIR%\%APP_NAME%.exe" /icon "assets\app.ico" /base "%BASE_BIN%"
 
 if %errorlevel% neq 0 (
     echo [ERROR] Compilation failed.
@@ -59,5 +71,12 @@ xcopy /E /I /Y "web" "%OUT_DIR%\web" >nul
 copy /Y "Lib\WebView2\64bit\WebView2Loader.dll" "%OUT_DIR%\WebView2Loader.dll" >nul
 xcopy /E /I /Y "Lib\WebView2\64bit" "%OUT_DIR%\Lib\WebView2\64bit" >nul
 
-echo [SUCCESS] Build complete: %OUT_DIR%\WindowAssist.exe
+echo [INFO] Packing %OUT_DIR%.zip...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Compress-Archive -Path '%OUT_DIR%\*' -DestinationPath '%OUT_DIR%.zip' -Force"
+if %errorlevel% neq 0 (
+    echo [WARN] Zip packaging failed, folder build is still usable.
+)
+
+echo [SUCCESS] Build complete: %OUT_DIR%\%APP_NAME%.exe
+echo [SUCCESS] Archive: %OUT_DIR%.zip
 pause

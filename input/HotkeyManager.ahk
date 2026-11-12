@@ -453,8 +453,10 @@ SettingsIPCHandler(data, webInst) {
     action := data["action"]
 
     if (action == "SETTINGS_READY") {
-        if (webInst)
+        if (webInst) {
             WebViewManager.Send(webInst, Map("action", "LOAD_CONFIG", "config", ConfigManager.configData))
+            WebViewManager.Send(webInst, Map("action", "APP_INFO", "version", App.Version))
+        }
     }
     else if (action == "START_KEY_RECORDING") {
         HotkeyManager.StartRecording()

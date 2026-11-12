@@ -742,6 +742,10 @@ if (window.chrome && window.chrome.webview) {
     if (typeof msg === "string") {
       try { msg = JSON.parse(msg); } catch (e) {}
     }
+    if (msg && msg.action === "APP_INFO") {
+      const versionEl = document.getElementById("app-version");
+      if (versionEl) versionEl.textContent = "v" + msg.version;
+    }
     if (msg && msg.action === "LOAD_CONFIG" && msg.config) {
       currentConfig = Object.assign({}, window.DEFAULT_CONFIG, msg.config);
       if (currentConfig.language) {

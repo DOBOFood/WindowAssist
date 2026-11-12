@@ -1,6 +1,8 @@
 #Requires AutoHotkey v2.0
 
 class App {
+    static Version := "1.0.0"
+
     ; Registry values temporarily changed while the app runs. Originals are backed
     ; up on the first start so a clean exit can put them back.
     static RegistryBackupPath := A_ScriptDir "\system-backup.json"
@@ -27,6 +29,7 @@ class App {
         this.ApplySystemRegistry()
 
         DllCall("winmm\timeBeginPeriod", "uint", 1)
+        A_IconTip := "WindowAssist v" this.Version
 
         ConfigManager.Load()
 
