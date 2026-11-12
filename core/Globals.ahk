@@ -19,7 +19,7 @@ global Rules := {
     gameClasses: Map()
 }
 
-global maxWorkspacesPerMon  := [6, 3, 3, 3]
+global maxWorkspacesPerMon  := [8, 4, 4, 4]
 global currentWorkspaces    := [1, 1, 1, 1]
 global wsWindows            := Map()
 global desktopStates        := Map()
