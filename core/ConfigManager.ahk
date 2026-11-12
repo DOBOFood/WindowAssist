@@ -54,6 +54,9 @@ class ConfigManager {
                     "posYPercent", 82,
                     "hideDelayMs", 400
                 ),
+                "windowMover", Map(
+                    "safeZone", 8
+                ),
                 "titleBar", Map(
                     "autoHide", true,
                     "darkTheme", true,

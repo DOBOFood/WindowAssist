@@ -104,6 +104,10 @@ const I18N = {
     osdHideDelay: "Время показа (мс)",
     osdHideDelay_desc: "Длительность отображения уведомления",
 
+    groupWindowMover: "Перенос и изменение размера окон",
+    windowMoverSafeZone: "Безопасная зона (px)",
+    windowMoverSafeZone_desc: "Сколько пикселей нужно сдвинуть курсор, прежде чем начнётся перенос или изменение размера окна. Увеличьте, если окно сдвигается при обычном клике.",
+
     groupTitleBar: "Скрытие заголовков окон (Title Bar)",
     titleBarAutoHide: "Автоматически скрывать заголовок окна",
     titleBarAutoHide_desc: "Скрывать верхнюю системную полосу с кнопками закрытия",
@@ -255,6 +259,10 @@ const I18N = {
     osdPosYPercent_desc: "Distance from top edge of screen (%)",
     osdHideDelay: "Display Time (ms)",
     osdHideDelay_desc: "How long notification stays on screen",
+
+    groupWindowMover: "Window Move & Resize",
+    windowMoverSafeZone: "Safe Zone (px)",
+    windowMoverSafeZone_desc: "How many pixels the cursor must move before a window starts moving or resizing. Increase this if windows shift on a normal click.",
 
     groupTitleBar: "Window Title Bar Hiding",
     titleBarAutoHide: "Automatically Hide Title Bar",

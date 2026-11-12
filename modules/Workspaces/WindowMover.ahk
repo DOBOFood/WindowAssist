@@ -1,7 +1,20 @@
 #Requires AutoHotkey v2.0
 
 class WindowMover {
-    static dummy() => true
+    static DefaultSafeZone := 8
+    static MaxSafeZone := 100
+
+    ; Cursor movement (px) required before a drag or resize begins.
+    ; Acts as a click-safe dead zone for LayerPeeker and plain clicks.
+    static SafeZonePx() {
+        value := ConfigManager.Get("general.windowMover.safeZone", this.DefaultSafeZone)
+        try {
+            value := Integer(value)
+        } catch {
+            value := this.DefaultSafeZone
+        }
+        return Max(1, Min(this.MaxSafeZone, value))
+    }
 }
 
 MoveWindowWithMouse() {
@@ -9,7 +22,7 @@ MoveWindowWithMouse() {
     CoordMode("Mouse", "Screen")
     MouseGetPos(&startX, &startY, &rawHwnd)
 
-    dragThreshold := 4
+    dragThreshold := WindowMover.SafeZonePx()
     hasMovedPastThreshold := false
 
     while GetKeyState("LButton", "P") {
@@ -85,6 +98,11 @@ MoveWindowWithMouse() {
         startX := curX
         startY := curY
     }
+
+    ; Position the drag anchor at the point where the safe zone was left,
+    ; so the window does not jump by the threshold once the drag starts.
+    startX := curX
+    startY := curY
 
     isMovingOrResizing := true
     try {
@@ -229,7 +247,7 @@ ResizeWindowWithMouse() {
     CoordMode("Mouse", "Screen")
     MouseGetPos(&startX, &startY, &rawHwnd)
 
-    dragThreshold := 4
+    dragThreshold := WindowMover.SafeZonePx()
     hasMovedPastThreshold := false
 
     while GetKeyState("RButton", "P") {
@@ -245,6 +263,10 @@ ResizeWindowWithMouse() {
         ToggleFloatingWindows()
         return
     }
+
+    ; Keep the original grab point for edge selection; startX/startY are
+    ; rebased to the safe-zone exit point below.
+    clickX := startX, clickY := startY
 
     if !rawHwnd
         return
@@ -295,7 +317,12 @@ ResizeWindowWithMouse() {
         startX := curX
         startY := curY
     }
-        
+
+    ; Position the resize anchor at the point where the safe zone was left,
+    ; so the window does not jump by the threshold once resizing starts.
+    startX := curX
+    startY := curY
+
     isMovingOrResizing := true
     try {
         isPinned := (WinGetExStyle("ahk_id " winId) & 0x8)
@@ -306,8 +333,8 @@ ResizeWindowWithMouse() {
         if (DllCall("GetForegroundWindow", "ptr") != winId)
             DllCall("user32\SetForegroundWindow", "ptr", winId)
 
-        relX := (startX - origX) / origW
-        relY := (startY - origY) / origH
+        relX := (clickX - origX) / origW
+        relY := (clickY - origY) / origH
 
         threshold := 0.30
         isLeft   := (relX < threshold)

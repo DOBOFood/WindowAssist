@@ -47,6 +47,9 @@ const DEFAULT_CONFIG = {
       posYPercent: 82,
       hideDelayMs: 400
     },
+    windowMover: {
+      safeZone: 8
+    },
     titleBar: {
       autoHide: true,
       darkTheme: true,

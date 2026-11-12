@@ -224,6 +224,13 @@ function syncFormValues() {
   if (elDelay) elDelay.value = currentConfig.general.osd.hideDelayMs;
   onOsdPositionChange(currentConfig.general.osd.position, false);
 
+  const elSafeZone = document.getElementById("gen_wm_safeZone");
+  if (elSafeZone) {
+    const safeZone = getPropertyByPath(currentConfig, "general.windowMover.safeZone");
+    const defaultSafeZone = getPropertyByPath(window.DEFAULT_CONFIG, "general.windowMover.safeZone");
+    elSafeZone.value = (safeZone !== undefined) ? safeZone : (defaultSafeZone !== undefined ? defaultSafeZone : 8);
+  }
+
   const elTbAuto = document.getElementById("gen_tb_autoHide");
   if (elTbAuto) elTbAuto.checked = !!currentConfig.general.titleBar.autoHide;
   const elTbDark = document.getElementById("gen_tb_darkTheme");
