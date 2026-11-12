@@ -10,3 +10,5 @@ Compiler/
 config.json
 error.log*
 TODO.md
+system-backup.json
+tests/last-run.txt

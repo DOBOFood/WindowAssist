@@ -1,6 +1,15 @@
 #Requires AutoHotkey v2.0
 
 class App {
+    ; Registry values temporarily changed while the app runs. Originals are backed
+    ; up on the first start so a clean exit can put them back.
+    static RegistryBackupPath := A_ScriptDir "\system-backup.json"
+    static RegistryOverrides := [
+        Map("key", "HKEY_CURRENT_USER\Control Panel\Desktop", "name", "ForegroundFlashCount"),
+        Map("key", "HKEY_CURRENT_USER\Control Panel\Desktop", "name", "ForegroundLockTimeout")
+    ]
+    static RegistryAbsent := "__absent__"
+
     static Init() {
         global hWinEventHook, winEventCallback, hMouseHook, mouseEventCallback
 
@@ -14,10 +23,8 @@ class App {
             ExitApp()
         }
 
-        try {
-            RegWrite(0, "REG_DWORD", "HKEY_CURRENT_USER\Control Panel\Desktop", "ForegroundFlashCount")
-            RegWrite(0, "REG_DWORD", "HKEY_CURRENT_USER\Control Panel\Desktop", "ForegroundLockTimeout")
-        }
+        this.BackupSystemRegistry()
+        this.ApplySystemRegistry()
 
         DllCall("winmm\timeBeginPeriod", "uint", 1)
 
@@ -60,6 +67,58 @@ class App {
         RestoreAllTitleBars()
         RecoverAllOffscreenWindows(true)
         ConfigManager.ApplyTaskbarVisibility(false)
+        this.RestoreSystemRegistry()
+    }
+
+    /**
+     * Saves the current values of App.RegistryOverrides, once.
+     * The backup survives reloads and crashes, so the real originals are never
+     * overwritten with the values this app writes.
+     */
+    static BackupSystemRegistry() {
+        if FileExist(this.RegistryBackupPath)
+            return
+
+        backup := Map()
+        for item in this.RegistryOverrides {
+            try
+                backup[item["name"]] := RegRead(item["key"], item["name"])
+            catch
+                backup[item["name"]] := this.RegistryAbsent
+        }
+
+        try FileAppend(JSON.Dump(backup, "  "), this.RegistryBackupPath, "UTF-8-RAW")
+    }
+
+    static ApplySystemRegistry() {
+        for item in this.RegistryOverrides {
+            try RegWrite(0, "REG_DWORD", item["key"], item["name"])
+        }
+    }
+
+    static RestoreSystemRegistry() {
+        if !FileExist(this.RegistryBackupPath)
+            return
+
+        restored := false
+        try {
+            backup := JSON.Load(FileRead(this.RegistryBackupPath, "UTF-8"))
+            if (backup is Map) {
+                for item in this.RegistryOverrides {
+                    name := item["name"]
+                    if !backup.Has(name)
+                        continue
+                    if (backup[name] == this.RegistryAbsent)
+                        RegDelete(item["key"], name)
+                    else
+                        RegWrite(backup[name], "REG_DWORD", item["key"], name)
+                }
+            }
+            restored := true
+        }
+
+        if restored
+            try FileDelete(this.RegistryBackupPath)
     }
 }
 
