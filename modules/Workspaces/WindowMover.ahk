@@ -145,9 +145,12 @@ MoveWindowWithMouse() {
                     newX := origX + (curX - startX)
                     newY := origY + (curY - startY)
                     
+                    ; Synchronous move: SWP_ASYNCWINDOWPOS queues every request on the target
+                    ; thread and makes the window trail the cursor; SWP_NOREDRAW defers the
+                    ; repaint until the drag ends. Apply each move immediately instead.
                     DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
                         , "int", newX, "int", newY, "int", 0, "int", 0
-                        , "uint", 0x4215) ; SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS | SWP_NOREDRAW
+                        , "uint", 0x0015) ; SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
 
                     if (isInPocketWin)
                         PocketManager.UpdateBorder(winId)
