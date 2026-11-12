@@ -14,6 +14,7 @@
 #Include ..\core\App.ahk
 #Include ..\core\ErrorLogger.ahk
 #Include ..\core\Autostart.ahk
+#Include ..\core\Theme.ahk
 #Include ..\core\ConfigManager.ahk
 #Include ..\modules\Workspaces\WindowMover.ahk
 
@@ -367,6 +368,32 @@ if (A_AhkPath != "") {
     genExit := RunWait('"' A_AhkPath '" "' A_ScriptDir '\..\tools\gen_defaults.ahk" check', , "Hide")
     AssertEq("web/js/defaults.js is generated and current", genExit, 0)
 }
+
+; --------------------------------------------------------------- Theme
+
+AssertEq("ARGB accent converts", Theme.HexFromArgb(0xC469797E), "#69797E")
+AssertEq("ABGR accent converts", Theme.HexFromAbgr(0xFF7E7969), "#69797E")
+AssertEq("black accent converts", Theme.HexFromArgb(0x00000000), "#000000")
+AssertEq("Windows 10 build family", Theme.OSFamily(19045), "win10")
+AssertEq("Windows 11 build family", Theme.OSFamily(22621), "win11")
+AssertEq("unknown build defaults to win10", Theme.OSFamily(0), "win10")
+
+themeInfo := Theme.Read()
+AssertTrue("theme info reports dark flag", themeInfo["dark"] == 0 || themeInfo["dark"] == 1)
+AssertTrue("theme info reports an accent", InStr(themeInfo["accent"], "#") == 1 && StrLen(themeInfo["accent"]) == 7)
+AssertTrue("theme info reports an OS family", themeInfo["os"] == "win10" || themeInfo["os"] == "win11")
+AssertEq("theme payload is a THEME message", Theme.Payload()["action"], "THEME")
+
+; ------------------------------------------------------- Settings design
+
+settingsCss := FileRead(A_ScriptDir "\..\web\css\settings.css", "UTF-8")
+AssertTrue("settings CSS has no acrylic or blur", !RegExMatch(settingsCss, "i)backdrop-filter|\bblur\("))
+AssertTrue("settings CSS defines a dark theme", InStr(settingsCss, 'html[data-theme="dark"]') > 0)
+AssertTrue("settings CSS defines Windows 10 tone", InStr(settingsCss, 'html[data-os="win10"]') > 0)
+
+themeScript := FileRead(A_ScriptDir "\..\web\js\settings.js", "UTF-8")
+AssertTrue("settings JS applies the system theme", InStr(themeScript, "function applyTheme") > 0)
+AssertTrue("settings JS handles THEME messages", InStr(themeScript, 'msg.action === "THEME"') > 0)
 
 ; ------------------------------------------------------- AHK v1 leftovers
 

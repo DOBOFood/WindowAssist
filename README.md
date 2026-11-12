@@ -133,6 +133,7 @@ https://github.com/user-attachments/assets/762e965c-3af6-4151-8522-dfd69f56cb17
 * **Custom Modifiers:** Easily switch the default <kbd>NumLock</kbd> modifier to <kbd>CapsLock</kbd>, <kbd>Alt</kbd>, or any other key.
 * **Multiple Profiles:** Create, duplicate, rename, or restore different shortcut setups.
 * **Bilingual UI:** Native support for both English and Russian.
+* **Native look:** The settings window follows the Windows app theme (light or dark) and the system accent color, with a flat Windows 10/11 layout and no acrylic blur.
 * **Run at sign-in:** Optional autostart through a Task Scheduler task with administrator rights, so no UAC prompt appears at logon.
 * **Backup & Transfer:** Export and import all settings and keybinding profiles as a JSON file.
 * **Conflict Warnings:** Actions that share the same shortcut are flagged in the keybinding list.

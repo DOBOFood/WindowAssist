@@ -35,6 +35,7 @@ class App {
         ; Reconcile the "run at startup" flag with the actual scheduled task
         ; after the hot path is up.
         SetTimer(() => AutostartManager.SyncConfig(), -1500)
+        Theme.Init()
 
         hasRestoredState := LoadState()
 

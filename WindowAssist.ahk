@@ -45,6 +45,7 @@ ListLines(false)
 #Include core/ErrorLogger.ahk
 #Include core/ConfigManager.ahk
 #Include core/Autostart.ahk
+#Include core/Theme.ahk
 #Include core/WindowTracker.ahk
 #Include core/CaptureEngine.ahk
 #Include core/WebViewManager.ahk

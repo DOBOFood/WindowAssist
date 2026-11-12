@@ -1,3 +1,37 @@
+// Theme follows the Windows app theme and accent color, sent by AHK.
+function hexToRgb(hex) {
+  return {
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16)
+  };
+}
+
+function mixColor(hex, target, amount) {
+  const a = hexToRgb(hex);
+  const b = hexToRgb(target);
+  const mix = (x, y) => Math.round(x + (y - x) * amount);
+  return "#" + [mix(a.r, b.r), mix(a.g, b.g), mix(a.b, b.b)]
+    .map(v => v.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function applyTheme(info) {
+  const root = document.documentElement;
+  const dark = !!info.dark;
+  const accent = /^#[0-9a-fA-F]{6}$/.test(info.accent || "") ? info.accent : "#0078D7";
+  const rgb = hexToRgb(accent);
+
+  root.setAttribute("data-theme", dark ? "dark" : "light");
+  root.setAttribute("data-os", info.os === "win11" ? "win11" : "win10");
+  root.style.colorScheme = dark ? "dark" : "light";
+  root.style.setProperty("--accent", accent);
+  root.style.setProperty("--accent-hover", mixColor(accent, dark ? "#ffffff" : "#000000", dark ? 0.12 : 0.08));
+  root.style.setProperty("--accent-pressed", mixColor(accent, dark ? "#ffffff" : "#000000", dark ? 0.22 : 0.18));
+  root.style.setProperty("--accent-subtle", `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${dark ? 0.2 : 0.12})`);
+  root.style.setProperty("--accent-faint", `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${dark ? 0.3 : 0.2})`);
+}
+
 // State Management
 // Nested objects from the cache must not hide new default keys (a shallow
 // assign dropped fields added in later versions).
@@ -847,6 +881,9 @@ if (window.chrome && window.chrome.webview) {
       const versionEl = document.getElementById("app-version");
       if (versionEl) versionEl.textContent = "v" + msg.version;
     }
+    if (msg && msg.action === "THEME") {
+      applyTheme(msg);
+    }
     if (msg && msg.action === "AUTOSTART_FAILED") {
       alert(t("autostartFailed"));
     }
@@ -873,6 +910,12 @@ if (window.chrome && window.chrome.webview) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  applyTheme({
+    dark: prefersDark,
+    accent: "#0078D7",
+    os: document.documentElement.getAttribute("data-os") || "win11"
+  });
   setLanguage(currentConfig.language || "en");
   syncFormValues();
   sendToAhk("SETTINGS_READY", {});

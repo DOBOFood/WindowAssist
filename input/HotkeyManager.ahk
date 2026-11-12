@@ -447,6 +447,7 @@ OpenSettingsWindow() {
     settingsGui.OnEvent("Size", (guiObj, minMax, w, h) => WebViewManager.Resize(webInst, w, h))
     settingsGui.OnEvent("Close", (guiObj) => (
         HotkeyManager.StopRecording(),
+        Theme.Detach(),
         WebViewManager.Destroy(guiObj.Hwnd),
         settingsGui := 0,
         webInst := 0
@@ -454,6 +455,7 @@ OpenSettingsWindow() {
 
     settingsGui.Show("w860 h620 Center")
     WebViewManager.Resize(webInst, 860, 620)
+    Theme.Attach((payload) => WebViewManager.Send(webInst, payload))
 
     SetTimer(() => WebViewManager.Send(webInst, Map("action", "LOAD_CONFIG", "config", ConfigManager.configData)), -200)
     SetTimer(() => WebViewManager.Send(webInst, Map("action", "LOAD_CONFIG", "config", ConfigManager.configData)), -600)
@@ -469,6 +471,7 @@ SettingsIPCHandler(data, webInst) {
         if (webInst) {
             WebViewManager.Send(webInst, Map("action", "LOAD_CONFIG", "config", ConfigManager.configData))
             WebViewManager.Send(webInst, Map("action", "APP_INFO", "version", App.Version))
+            WebViewManager.Send(webInst, Theme.Payload())
         }
     }
     else if (action == "START_KEY_RECORDING") {
