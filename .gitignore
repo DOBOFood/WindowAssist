@@ -8,3 +8,4 @@ Compiler/
 *.zip
 .repomixignore
 config.json
+error.log*

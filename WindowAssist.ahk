@@ -1,6 +1,9 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
+; Register the error logger before any startup code runs.
+ErrorLogger.Init()
+
 ; Elevate process to administrator privileges if required
 if !A_IsAdmin {
     try {
@@ -38,6 +41,7 @@ ListLines(false)
 
 ; 3. Include Core Modules
 #Include core/Win32API.ahk
+#Include core/ErrorLogger.ahk
 #Include core/ConfigManager.ahk
 #Include core/WindowTracker.ahk
 #Include core/CaptureEngine.ahk
