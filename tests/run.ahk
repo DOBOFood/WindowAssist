@@ -12,6 +12,7 @@
 #Include ..\Lib\JSON.ahk
 #Include ..\core\Globals.ahk
 #Include ..\core\App.ahk
+#Include ..\core\ErrorLogger.ahk
 #Include ..\core\ConfigManager.ahk
 #Include ..\modules\Workspaces\WindowMover.ahk
 
@@ -104,6 +105,64 @@ AssertTrue("named map stays map", obj is Map)
 AssertTrue("nested indexed map becomes array", obj["key"] is Array)
 
 AssertEq("scalars pass through", ConfigManager._NormalizeParsedJSON(5), 5)
+
+; ----------------------------------------------------------------- Migration
+
+legacy := Map(
+    "altTab", Map("enabled", 0),
+    "general", Map(
+        "altTab", Map("enabled", 1),
+        "titleBar", Map("triggerHeightMaximized", 12)
+    ),
+    "titleBar", Map("triggerHeightMaximized", 10, "visibleHeight", 55)
+)
+AssertTrue("legacy config reports migration", ConfigManager.Migrate(legacy))
+AssertTrue("top-level titleBar removed", !legacy.Has("titleBar"))
+AssertTrue("top-level altTab removed", !legacy.Has("altTab"))
+AssertEq("legacy altTab wins over general", legacy["general"]["altTab"]["enabled"], 0)
+AssertEq("general titleBar wins over legacy", legacy["general"]["titleBar"]["triggerHeightMaximized"], 12)
+AssertEq("visibleHeight moved to general", legacy["general"]["titleBar"]["visibleHeight"], 55)
+AssertEq("schema version stamped", legacy["configVersion"], ConfigManager.SchemaVersion)
+AssertTrue("second migration run is a no-op", !ConfigManager.Migrate(legacy))
+
+defaults := ConfigManager.GetDefaultConfig()
+AssertTrue("defaults carry configVersion", defaults.Has("configVersion"))
+AssertTrue("defaults have no legacy titleBar", !defaults.Has("titleBar"))
+AssertTrue("defaults have no legacy altTab", !defaults.Has("altTab"))
+AssertEq("visibleHeight lives in general", defaults["general"]["titleBar"]["visibleHeight"], 40)
+
+jsDefaults := FileRead(A_ScriptDir "\..\web\js\defaults.js", "UTF-8")
+AssertTrue("generated web defaults carry configVersion", InStr(jsDefaults, '"configVersion": ' ConfigManager.SchemaVersion) > 0)
+
+; --------------------------------------------------------------- ErrorLogger
+
+ErrorLogger.Record("unit test action")
+logText := ErrorLogger.Format(Error("boom", -1), "unit")
+AssertTrue("log includes version", InStr(logText, "Version: " App.Version) > 0)
+AssertTrue("log includes OS", InStr(logText, "OS: ") > 0)
+AssertTrue("log includes active window", InStr(logText, "Active window: ") > 0)
+AssertTrue("log includes monitors", InStr(logText, "Monitors: ") > 0)
+AssertTrue("log includes recent action", InStr(logText, "unit test action") > 0)
+
+ErrorLogger.actions := []
+Loop 25
+    ErrorLogger.Record("action " A_Index)
+AssertEq("action ring is capped", ErrorLogger.actions.Length, ErrorLogger.maxActions)
+AssertTrue("oldest actions are dropped", InStr(ErrorLogger.actions[1], "action 6") > 0)
+
+; -------------------------------------------------------------------- i18n
+
+CountText(haystack, needle) {
+    return (StrLen(haystack) - StrLen(StrReplace(haystack, needle, ""))) / StrLen(needle)
+}
+
+i18nText := FileRead(A_ScriptDir "\..\web\js\i18n.js", "UTF-8")
+for key in ["profileAlreadyExists", "defaultProfileName", "groupHotkeysSys",
+            "groupHotkeysOverview", "groupHotkeysPocket", "groupHotkeysWorkspaces",
+            "groupHotkeysWindow"] {
+    count := CountText(i18nText, key ":")
+    AssertEq("i18n key " key " exists in ru and en", count, 2)
+}
 
 ; ------------------------------------------------------------------- Versions
 

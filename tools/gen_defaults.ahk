@@ -16,6 +16,7 @@ defaults := ConfigManager.GetDefaultConfig()
 ; Legacy top-level keys (titleBar, workspaces, rules, altTab) are AHK-only and
 ; intentionally not exposed to the settings UI.
 filtered := Map(
+    "configVersion", defaults["configVersion"],
     "language", defaults["language"],
     "hotkeys", defaults["hotkeys"],
     "general", defaults["general"],
