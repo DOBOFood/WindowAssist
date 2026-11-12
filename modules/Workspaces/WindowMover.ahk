@@ -30,6 +30,13 @@ class WindowMover {
         }
         return Max(1, Min(this.MaxKeyboardStep, value))
     }
+
+    ; "custom" snaps with SetWindowPos (instant), "native" lets Windows snap
+    ; halves with Win+Arrow and falls back to custom for other zones.
+    static SnapMode() {
+        mode := ConfigManager.Get("general.windowMover.snapMode", "custom")
+        return (mode == "native") ? "native" : "custom"
+    }
 }
 
 ; A click-through rectangle that previews where a dragged window will snap.
@@ -90,6 +97,92 @@ ComputeSnapZone(curX, curY, mL, mT, mR, mB, threshold := 20) {
     if nearRight
         return Map("kind", "right", "x", mL + halfW, "y", mT, "w", width - halfW, "h", height)
     return 0
+}
+
+; Windows draws the visible frame inside the window rect (8 px borders on
+; Win10/11), so a raw SetWindowPos leaves gaps between snapped windows.
+GetFramePadding(hwnd) {
+    empty := Map("left", 0, "top", 0, "right", 0, "bottom", 0)
+    try {
+        wx := 0, wy := 0, ww := 0, wh := 0
+        WinGetPos(&wx, &wy, &ww, &wh, "ahk_id " hwnd)
+        if (ww <= 0 || wh <= 0)
+            return empty
+
+        buf := Buffer(16, 0)
+        result := DllCall("dwmapi\DwmGetWindowAttribute", "ptr", hwnd
+            , "uint", 9 ; DWMWA_EXTENDED_FRAME_BOUNDS
+            , "ptr", buf, "uint", 16, "int")
+        if (result != 0)
+            return empty
+
+        visibleLeft := NumGet(buf, 0, "Int"), visibleTop := NumGet(buf, 4, "Int")
+        visibleRight := NumGet(buf, 8, "Int"), visibleBottom := NumGet(buf, 12, "Int")
+        if (visibleRight <= visibleLeft || visibleBottom <= visibleTop)
+            return empty
+
+        return Map(
+            "left", Max(0, visibleLeft - wx),
+            "top", Max(0, visibleTop - wy),
+            "right", Max(0, (wx + ww) - visibleRight),
+            "bottom", Max(0, (wy + wh) - visibleBottom)
+        )
+    } catch {
+        return empty
+    }
+}
+
+; Grows a visible target rectangle into the window rectangle Windows expects.
+ApplyFramePadding(zone, padding) {
+    return Map(
+        "x", zone["x"] - padding["left"],
+        "y", zone["y"] - padding["top"],
+        "w", zone["w"] + padding["left"] + padding["right"],
+        "h", zone["h"] + padding["top"] + padding["bottom"]
+    )
+}
+
+ApplySnapGeometry(winId, zone) {
+    padded := ApplyFramePadding(zone, GetFramePadding(winId))
+    DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
+        , "int", padded["x"], "int", padded["y"]
+        , "int", padded["w"], "int", padded["h"]
+        , "uint", 0x0014) ; SWP_NOZORDER | SWP_NOACTIVATE
+}
+
+; Native Aero Snap can only produce left/right halves and maximize through
+; Win+Arrow; quarters and the bottom half keep the custom placement.
+NativeSnapKeys(zone) {
+    if !zone
+        return []
+    kind := zone["kind"]
+    if (kind == "left")
+        return ["#Left"]
+    if (kind == "right")
+        return ["#Right"]
+    return []
+}
+
+TryNativeSnap(winId, zone) {
+    keys := NativeSnapKeys(zone)
+    if (keys.Length == 0)
+        return false
+
+    ; A held modifier would change what Win+Arrow does.
+    if (GetKeyState("Alt", "P") || GetKeyState("Ctrl", "P") || GetKeyState("Shift", "P")
+        || GetKeyState("LWin", "P") || GetKeyState("RWin", "P"))
+        return false
+
+    if (DllCall("GetForegroundWindow", "ptr") != winId) {
+        DllCall("user32\SetForegroundWindow", "ptr", winId)
+        Sleep(30)
+        if (DllCall("GetForegroundWindow", "ptr") != winId)
+            return false
+    }
+
+    for key in keys
+        Send(key)
+    return true
 }
 
 MoveWindowWithMouse() {
@@ -278,10 +371,30 @@ MoveWindowWithMouse() {
                 wasSnappedMax := false
                 DllCall("ShowWindow", "ptr", winId, "int", 9) ; SW_RESTORE
             }
-            DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
-                , "int", finalZone["x"], "int", finalZone["y"]
-                , "int", finalZone["w"], "int", finalZone["h"]
-                , "uint", 0x0014) ; SWP_NOZORDER | SWP_NOACTIVATE
+
+            if (WindowMover.SnapMode() == "native") {
+                beforeX := 0, beforeY := 0, beforeW := 0, beforeH := 0
+                WinGetPos(&beforeX, &beforeY, &beforeW, &beforeH, "ahk_id " winId)
+
+                if (TryNativeSnap(winId, finalZone)) {
+                    ; Let the system snap animation finish before saving geometry.
+                    Sleep(220)
+                }
+
+                afterX := 0, afterY := 0, afterW := 0, afterH := 0
+                WinGetPos(&afterX, &afterY, &afterW, &afterH, "ahk_id " winId)
+
+                ; If snapping is disabled in Windows, Win+Arrow did nothing.
+                ; Fall back to custom placement so the window still lands flush.
+                changed := Abs(afterX - beforeX) > 4 || Abs(afterY - beforeY) > 4
+                    || Abs(afterW - beforeW) > 4 || Abs(afterH - beforeH) > 4
+                if !changed
+                    ApplySnapGeometry(winId, finalZone)
+            } else {
+                ; Custom placement also compensates the invisible DWM borders,
+                ; otherwise visible window edges leave gaps.
+                ApplySnapGeometry(winId, finalZone)
+            }
             appliedSnap := true
         }
 

@@ -85,6 +85,19 @@ AssertEq("keyboard step clamps high", WindowMover.KeyboardStepPx(), 200)
 SetKeyboardStep("abc")
 AssertEq("keyboard step falls back on garbage", WindowMover.KeyboardStepPx(), 20)
 
+SetSnapMode(value) {
+    ConfigManager.configData := Map("general", Map("windowMover", Map("snapMode", value)))
+}
+
+ConfigManager.configData := Map()
+AssertEq("snap mode default", WindowMover.SnapMode(), "custom")
+
+SetSnapMode("native")
+AssertEq("snap mode native", WindowMover.SnapMode(), "native")
+
+SetSnapMode("weird")
+AssertEq("snap mode falls back on garbage", WindowMover.SnapMode(), "custom")
+
 ; ------------------------------------------------------------------ Get paths
 
 ConfigManager.configData := Map("general", Map("windowMover", Map("safeZone", 12)))
@@ -229,12 +242,33 @@ AssertEq("snap bottom half", zone["kind"], "bottom")
 AssertEq("no snap in the middle", Type(ComputeSnapZone(500, 400, 0, 0, 1000, 800, 20)), "Integer")
 AssertEq("no snap on a degenerate monitor", Type(ComputeSnapZone(0, 0, 0, 0, 0, 0, 20)), "Integer")
 
+; ------------------------------------------------------ Frame padding (snap)
+
+zone := Map("x", 100, "y", 50, "w", 500, "h", 400)
+padding := Map("left", 8, "top", 0, "right", 8, "bottom", 8)
+padded := ApplyFramePadding(zone, padding)
+AssertEq("padding shifts x outwards", padded["x"], 92)
+AssertEq("padding keeps y when top is zero", padded["y"], 50)
+AssertEq("padding grows width", padded["w"], 516)
+AssertEq("padding grows height", padded["h"], 408)
+
+identity := ApplyFramePadding(zone, Map("left", 0, "top", 0, "right", 0, "bottom", 0))
+AssertEq("zero padding keeps x", identity["x"], 100)
+AssertEq("zero padding keeps width", identity["w"], 500)
+
+AssertEq("native keys for left half", JSON.Dump(NativeSnapKeys(Map("kind", "left"))), '["#Left"]')
+AssertEq("native keys for right half", JSON.Dump(NativeSnapKeys(Map("kind", "right"))), '["#Right"]')
+AssertEq("no native keys for quarters", NativeSnapKeys(Map("kind", "quarter")).Length, 0)
+AssertEq("no native keys for bottom half", NativeSnapKeys(Map("kind", "bottom")).Length, 0)
+AssertEq("no native keys without a zone", NativeSnapKeys(0).Length, 0)
+
 defaults := ConfigManager.GetDefaultConfig()
 AssertTrue("defaults carry configVersion", defaults.Has("configVersion"))
 AssertTrue("defaults have no legacy titleBar", !defaults.Has("titleBar"))
 AssertTrue("defaults have no legacy altTab", !defaults.Has("altTab"))
 AssertEq("visibleHeight lives in general", defaults["general"]["titleBar"]["visibleHeight"], 40)
 AssertTrue("keyboard step default", defaults["general"]["windowMover"]["keyboardStep"] == 20)
+AssertTrue("snap mode default is custom", defaults["general"]["windowMover"]["snapMode"] == "custom")
 AssertTrue("autostart default is off", !defaults["general"]["autostart"]["enabled"])
 
 keyboardActions := [
@@ -253,6 +287,9 @@ AssertEq("resize shorter default", JSON.Dump(defaultBinds["window_resize_shorter
 settingsJs := FileRead(A_ScriptDir "\..\web\js\settings.js", "UTF-8")
 for actionKey in keyboardActions
     AssertTrue("settings list " actionKey, InStr(settingsJs, '"' actionKey '"') > 0)
+
+settingsHtml := FileRead(A_ScriptDir "\..\web\settings.html", "UTF-8")
+AssertTrue("settings expose the snap mode control", InStr(settingsHtml, 'id="gen_wm_snapMode"') > 0)
 
 ; ------------------------------------------------------------- Autostart XML
 
@@ -296,6 +333,7 @@ for key in ["profileAlreadyExists", "defaultProfileName", "groupHotkeysSys",
             "autostartEnabled", "autostartFailed", "groupData", "settingsExport",
             "settingsImport", "settingsExported", "settingsImportFailed",
             "hotkeyConflictBadge", "hotkeyConflictsSummary",
+            "windowMoverSnapMode", "snapMode_custom", "snapMode_native",
             "act_window_move_left", "act_window_move_right", "act_window_move_up",
             "act_window_move_down", "act_window_resize_wider", "act_window_resize_narrower",
             "act_window_resize_taller", "act_window_resize_shorter"] {

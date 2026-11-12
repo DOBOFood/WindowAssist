@@ -90,7 +90,8 @@ class ConfigManager {
                 ),
                 "windowMover", Map(
                     "safeZone", 8,
-                    "keyboardStep", 20
+                    "keyboardStep", 20,
+                    "snapMode", "custom"
                 ),
                 "autostart", Map(
                     "enabled", false

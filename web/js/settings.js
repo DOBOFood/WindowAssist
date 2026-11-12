@@ -267,6 +267,12 @@ function syncFormValues() {
     elKeyboardStep.value = (step !== undefined) ? step : (defaultStep !== undefined ? defaultStep : 20);
   }
 
+  const elSnapMode = document.getElementById("gen_wm_snapMode");
+  if (elSnapMode) {
+    const mode = getPropertyByPath(currentConfig, "general.windowMover.snapMode");
+    elSnapMode.value = (mode === "native" || mode === "custom") ? mode : "custom";
+  }
+
   const elAutostart = document.getElementById("gen_autostart");
   if (elAutostart) elAutostart.checked = !!getPropertyByPath(currentConfig, "general.autostart.enabled");
 

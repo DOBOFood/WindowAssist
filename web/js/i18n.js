@@ -134,6 +134,10 @@ const I18N = {
     windowMoverSafeZone_desc: "Сколько пикселей нужно сдвинуть курсор, прежде чем начнётся перенос или изменение размера окна. Увеличьте, если окно сдвигается при обычном клике.",
     windowMoverKeyboardStep: "Шаг клавиатурного переноса (px)",
     windowMoverKeyboardStep_desc: "На сколько пикселей окно сдвигается или меняет размер за одно нажатие клавиши.",
+    windowMoverSnapMode: "Прилипание к краям",
+    windowMoverSnapMode_desc: "Своё размещение срабатывает мгновенно и без анимации. Системный режим использует Aero Snap Windows для половин и разворота; четверти и низ раскладываются своим размещением.",
+    snapMode_custom: "Свой (мгновенно)",
+    snapMode_native: "Системный Aero Snap",
 
     groupStartup: "Запуск приложения",
     autostartEnabled: "Запускать при входе в систему",
@@ -335,6 +339,10 @@ const I18N = {
     windowMoverSafeZone_desc: "How many pixels the cursor must move before a window starts moving or resizing. Increase this if windows shift on a normal click.",
     windowMoverKeyboardStep: "Keyboard Move Step (px)",
     windowMoverKeyboardStep_desc: "How many pixels the window moves or resizes per key press.",
+    windowMoverSnapMode: "Edge Snapping",
+    windowMoverSnapMode_desc: "Custom placement is instant and animation-free. Native mode lets Windows Aero Snap handle halves and maximize; quarters and the bottom half use custom placement.",
+    snapMode_custom: "Custom (instant)",
+    snapMode_native: "Native Aero Snap",
 
     groupStartup: "Application Startup",
     autostartEnabled: "Run at sign-in",

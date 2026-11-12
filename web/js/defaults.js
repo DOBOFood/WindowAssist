@@ -40,7 +40,8 @@ const DEFAULT_CONFIG = {
     },
     "windowMover": {
       "keyboardStep": 20,
-      "safeZone": 8
+      "safeZone": 8,
+      "snapMode": "custom"
     }
   },
   "hotkeys": {
