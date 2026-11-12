@@ -1,11 +1,13 @@
 #Requires AutoHotkey v2.0
 
 class ConfigManager {
+    static SchemaVersion := 1
     static configPath := A_ScriptDir "\config.json"
     static configData := Map()
 
     static GetDefaultConfig() {
         return Map(
+            "configVersion", this.SchemaVersion,
             "language", "en",
             "hotkeys", Map(
                 "activeProfile", "default",
@@ -61,7 +63,8 @@ class ConfigManager {
                     "autoHide", true,
                     "darkTheme", true,
                     "triggerHeightMaximized", 10,
-                    "triggerHeightFloating", 10
+                    "triggerHeightFloating", 10,
+                    "visibleHeight", 40
                 ),
                 "taskbar", Map(
                     "hideTaskList", false
@@ -86,15 +89,6 @@ class ConfigManager {
             "workspaces", Map(
                 "maxWorkspacesPerMonitor", [8, 4, 4, 4]
             ),
-            "titleBar", Map(
-                "triggerHeightMaximized", 10,
-                "triggerHeightFloating", 10,
-                "visibleHeight", 40
-            ),
-            "altTab", Map(
-                "enabled", true,
-                "showWorkspaceBadge", true
-            ),
             "rules", Map(
                 "groupedProcesses", ["prismlauncher.exe"],
                 "ignoreProcesses", []
@@ -114,7 +108,12 @@ class ConfigManager {
                     if (!loaded.Has("hotkeys") || !(loaded["hotkeys"] is Map) || !loaded["hotkeys"].Has("profiles")) {
                         loaded["hotkeys"] := defaultConfig["hotkeys"]
                     }
+                    migrated := this.Migrate(loaded)
                     this.configData := this._MergeMaps(defaultConfig, loaded)
+                    ; Rewrite the file once so the migrated layout is what the user
+                    ; (and future migrations) actually see.
+                    if (migrated)
+                        this.Save()
                 } else {
                     this.configData := defaultConfig
                 }
@@ -129,6 +128,59 @@ class ConfigManager {
         this.ApplyToRuntime()
     }
 
+    /**
+     * Brings a config loaded from disk up to the current schema.
+     * Returns true when the config was changed and should be saved back.
+     *
+     * Version 1 removes the duplicated top-level titleBar/altTab sections.
+     */
+    static Migrate(config) {
+        changed := false
+        version := 0
+        if (config.Has("configVersion")) {
+            try version := Integer(config["configVersion"])
+        }
+
+        if (version < 1) {
+            ; The UI always wrote general.titleBar and runtime preferred it, so
+            ; legacy values only fill the gaps (visibleHeight lived there).
+            if this._AbsorbLegacySection(config, "titleBar", "general", "titleBar", false)
+                changed := true
+            ; Alt+Tab was read from the top-level section only, so it wins.
+            if this._AbsorbLegacySection(config, "altTab", "general", "altTab", true)
+                changed := true
+        }
+
+        if (!config.Has("configVersion") || version != this.SchemaVersion) {
+            config["configVersion"] := this.SchemaVersion
+            changed := true
+        }
+
+        return changed
+    }
+
+    static _AbsorbLegacySection(config, legacyKey, parentKey, targetKey, override) {
+        if (!config.Has(legacyKey) || !(config[legacyKey] is Map))
+            return false
+
+        legacy := config[legacyKey]
+        if (!config.Has(parentKey) || !(config[parentKey] is Map))
+            config[parentKey] := Map()
+
+        parent := config[parentKey]
+        if (!parent.Has(targetKey) || !(parent[targetKey] is Map))
+            parent[targetKey] := Map()
+
+        target := parent[targetKey]
+        for key, value in legacy {
+            if (override || !target.Has(key))
+                target[key] := value
+        }
+
+        config.Delete(legacyKey)
+        return true
+    }
+
     static Save(newConfigMap := "") {
         if (newConfigMap is Map)
             this.configData := newConfigMap
@@ -136,9 +188,13 @@ class ConfigManager {
         try {
             this.configData := this._NormalizeParsedJSON(this.configData)
             jsonStr := JSON.Dump(this.configData, "  ")
-            if FileExist(this.configPath)
-                FileDelete(this.configPath)
-            FileAppend(jsonStr, this.configPath, "UTF-8")
+            ; Write next to the target first: a crash must not leave the user
+            ; with a half-written config, especially during schema migrations.
+            tempPath := this.configPath ".tmp"
+            if FileExist(tempPath)
+                FileDelete(tempPath)
+            FileAppend(jsonStr, tempPath, "UTF-8")
+            FileMove(tempPath, this.configPath, true)
             this.ApplyToRuntime()
             return true
         } catch {
@@ -183,22 +239,14 @@ class ConfigManager {
                 maxWorkspacesPerMon := maxList
         }
 
-        if this.configData.Has("titleBar") {
-            tb := this.configData["titleBar"]
-            if tb.Has("triggerHeightMaximized")
-                triggerHeightMaximized := tb["triggerHeightMaximized"]
-            if tb.Has("triggerHeightFloating")
-                triggerHeightFloating := tb["triggerHeightFloating"]
-            if tb.Has("visibleHeight")
-                titleBarVisibleHeight := tb["visibleHeight"]
-        }
-
         if this.configData.Has("general") && this.configData["general"].Has("titleBar") {
             tb := this.configData["general"]["titleBar"]
             if tb.Has("triggerHeightMaximized")
                 triggerHeightMaximized := tb["triggerHeightMaximized"]
             if tb.Has("triggerHeightFloating")
                 triggerHeightFloating := tb["triggerHeightFloating"]
+            if tb.Has("visibleHeight")
+                titleBarVisibleHeight := tb["visibleHeight"]
             
             if tb.Has("autoHide") && !tb["autoHide"] {
                 for hwnd, info in titleBarInfo {

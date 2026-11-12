@@ -1,11 +1,32 @@
 // State Management
+// Nested objects from the cache must not hide new default keys (a shallow
+// assign dropped fields added in later versions).
+function deepMerge(base, override) {
+  if (!override || typeof override !== "object" || Array.isArray(override)) return base;
+  const result = Object.assign({}, base);
+  for (const key in override) {
+    const baseValue = result[key];
+    const overrideValue = override[key];
+    if (baseValue && overrideValue
+        && typeof baseValue === "object" && typeof overrideValue === "object"
+        && !Array.isArray(baseValue) && !Array.isArray(overrideValue)) {
+      result[key] = deepMerge(baseValue, overrideValue);
+    } else {
+      result[key] = overrideValue;
+    }
+  }
+  return result;
+}
+
 function loadCachedConfig() {
   try {
     const cached = localStorage.getItem("windowassist_config");
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (parsed && typeof parsed === "object") {
-        return Object.assign({}, window.DEFAULT_CONFIG, parsed);
+      // Drop the cache when the config schema changed, migrations run in AHK.
+      if (parsed && typeof parsed === "object"
+          && parsed.configVersion === window.DEFAULT_CONFIG.configVersion) {
+        return deepMerge(window.DEFAULT_CONFIG, parsed);
       }
     }
   } catch (e) {}
@@ -366,7 +387,7 @@ function syncProfileSelect() {
   profiles.forEach(name => {
     const opt = document.createElement("option");
     opt.value = name;
-    opt.textContent = name === "default" ? (currentLang === "ru" ? "По умолчанию" : "Default") : name;
+    opt.textContent = name === "default" ? t("defaultProfileName") : name;
     if (name === active) opt.selected = true;
     sel.appendChild(opt);
   });
@@ -384,7 +405,7 @@ function addNewProfile() {
   if (!name || !name.trim()) return;
   const cleanName = name.trim();
   if (currentConfig.hotkeys.profiles[cleanName]) {
-    alert("Profile already exists.");
+    alert(t("profileAlreadyExists"));
     return;
   }
   const defBinds = window.DEFAULT_CONFIG.hotkeys.profiles["default"] || {};
@@ -407,7 +428,7 @@ function renameProfile() {
   if (!newName || !newName.trim() || newName.trim() === active) return;
   const clean = newName.trim();
   if (currentConfig.hotkeys.profiles[clean]) {
-    alert("Profile already exists.");
+    alert(t("profileAlreadyExists"));
     return;
   }
   const binds = currentConfig.hotkeys.profiles[active];
@@ -427,7 +448,7 @@ function duplicateProfile() {
   if (!newName || !newName.trim()) return;
   const clean = newName.trim();
   if (currentConfig.hotkeys.profiles[clean]) {
-    alert("Profile already exists.");
+    alert(t("profileAlreadyExists"));
     return;
   }
   const bindsCopy = JSON.parse(JSON.stringify(currentConfig.hotkeys.profiles[active] || {}));
@@ -467,11 +488,11 @@ function renderHotkeysList() {
   const defBinds = window.DEFAULT_CONFIG.hotkeys.profiles["default"] || {};
 
   const groups = {
-    sys: { title: currentLang === "ru" ? "Системные команды" : "System Commands", items: [] },
-    overview: { title: currentLang === "ru" ? "Обзор и навигация" : "Overview & Navigation", items: [] },
-    pocket: { title: currentLang === "ru" ? "Карман" : "Pocket", items: [] },
-    workspaces: { title: currentLang === "ru" ? "Рабочие столы" : "Workspaces", items: [] },
-    window: { title: currentLang === "ru" ? "Оконные операции" : "Window Actions", items: [] }
+    sys: { title: t("groupHotkeysSys"), items: [] },
+    overview: { title: t("groupHotkeysOverview"), items: [] },
+    pocket: { title: t("groupHotkeysPocket"), items: [] },
+    workspaces: { title: t("groupHotkeysWorkspaces"), items: [] },
+    window: { title: t("groupHotkeysWindow"), items: [] }
   };
 
   HOTKEY_ACTIONS.forEach(act => {
@@ -747,7 +768,7 @@ if (window.chrome && window.chrome.webview) {
       if (versionEl) versionEl.textContent = "v" + msg.version;
     }
     if (msg && msg.action === "LOAD_CONFIG" && msg.config) {
-      currentConfig = Object.assign({}, window.DEFAULT_CONFIG, msg.config);
+      currentConfig = deepMerge(window.DEFAULT_CONFIG, msg.config);
       if (currentConfig.language) {
         currentLang = currentConfig.language;
       }

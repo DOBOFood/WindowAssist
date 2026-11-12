@@ -13,6 +13,7 @@ const DEFAULT_CONFIG = {
       "workspaceBorderHover": "#0078D7"
     }
   },
+  "configVersion": 1,
   "general": {
     "altTab": {
       "enabled": 1,
@@ -31,7 +32,8 @@ const DEFAULT_CONFIG = {
       "autoHide": 1,
       "darkTheme": 1,
       "triggerHeightFloating": 10,
-      "triggerHeightMaximized": 10
+      "triggerHeightMaximized": 10,
+      "visibleHeight": 40
     },
     "windowMover": {
       "safeZone": 8

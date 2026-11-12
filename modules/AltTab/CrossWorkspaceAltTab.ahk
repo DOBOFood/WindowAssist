@@ -53,7 +53,7 @@ class CrossWorkspaceAltTab {
     }
 
     static OnAltTab(hotkeyName) {
-        if !ConfigManager.Get("altTab.enabled", true) {
+        if !ConfigManager.Get("general.altTab.enabled", true) {
             Send("!{Tab}")
             return
         }
@@ -61,7 +61,7 @@ class CrossWorkspaceAltTab {
     }
 
     static OnAltShiftTab(hotkeyName) {
-        if !ConfigManager.Get("altTab.enabled", true) {
+        if !ConfigManager.Get("general.altTab.enabled", true) {
             Send("!+{Tab}")
             return
         }

@@ -41,6 +41,15 @@ const I18N = {
     promptDuplicateProfile: "Введите название копии профиля:",
     confirmDeleteProfile: "Вы уверены, что хотите удалить профиль '{name}'?",
     duplicateProfileSuffix: " (Копия)",
+    profileAlreadyExists: "Профиль с таким именем уже существует.",
+    defaultProfileName: "По умолчанию",
+
+    // Hotkey List Groups
+    groupHotkeysSys: "Системные команды",
+    groupHotkeysOverview: "Обзор и навигация",
+    groupHotkeysPocket: "Карман",
+    groupHotkeysWorkspaces: "Рабочие столы",
+    groupHotkeysWindow: "Оконные операции",
 
     // Hotkey Action Names
     act_move_window_prefix: "Перенос окон",
@@ -197,6 +206,15 @@ const I18N = {
     promptDuplicateProfile: "Enter name for duplicate profile:",
     confirmDeleteProfile: "Are you sure you want to delete profile '{name}'?",
     duplicateProfileSuffix: " (Copy)",
+    profileAlreadyExists: "A profile with this name already exists.",
+    defaultProfileName: "Default",
+
+    // Hotkey List Groups
+    groupHotkeysSys: "System Commands",
+    groupHotkeysOverview: "Overview & Navigation",
+    groupHotkeysPocket: "Pocket",
+    groupHotkeysWorkspaces: "Workspaces",
+    groupHotkeysWindow: "Window Actions",
 
     // Hotkey Action Names
     act_move_window_prefix: "Move Windows",

@@ -8,6 +8,7 @@ Compiler/
 *.zip
 .repomixignore
 config.json
+config.json.tmp
 error.log*
 TODO.md
 system-backup.json
