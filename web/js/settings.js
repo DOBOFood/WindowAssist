@@ -335,6 +335,14 @@ function updateSetting(path, val) {
   sendToAhk("SET_SETTING", { key: path, value: val });
 }
 
+function exportSettings() {
+  sendToAhk("EXPORT_SETTINGS");
+}
+
+function importSettings() {
+  sendToAhk("IMPORT_SETTINGS");
+}
+
 function resetField(path) {
   const defVal = getPropertyByPath(window.DEFAULT_CONFIG, path);
   if (defVal === undefined) return;
@@ -498,12 +506,50 @@ function filterHotkeys(query) {
   renderHotkeysList();
 }
 
+function normalizeCombo(combo) {
+  return combo.split("+")
+    .map(part => part.trim().toLowerCase())
+    .map(part => part === "control" ? "ctrl" : (part === "windows" ? "win" : part))
+    .sort()
+    .join("+");
+}
+
+// Actions that share the exact same shortcut. Order and Ctrl/Control spellings
+// are ignored, but different modifier sets are distinct bindings (NumLock+Left
+// and NumLock+Alt+Left can coexist).
+function findHotkeyConflicts(binds) {
+  const byCombo = new Map();
+  for (const actionKey in binds) {
+    for (const combo of binds[actionKey] || []) {
+      if (typeof combo !== "string" || !combo.trim()) continue;
+      const normalized = normalizeCombo(combo);
+      if (!byCombo.has(normalized)) byCombo.set(normalized, new Set());
+      byCombo.get(normalized).add(actionKey);
+    }
+  }
+
+  const conflicts = new Map();
+  const combos = [];
+  byCombo.forEach((actions, normalized) => {
+    if (actions.size < 2) return;
+    combos.push(normalized);
+    actions.forEach(actionKey => {
+      if (!conflicts.has(actionKey)) conflicts.set(actionKey, new Set());
+      actions.forEach(other => {
+        if (other !== actionKey) conflicts.get(actionKey).add(other);
+      });
+    });
+  });
+  return { conflicts, combos };
+}
+
 function renderHotkeysList() {
   const container = document.getElementById("hotkeys-list-container");
   if (!container) return;
 
   const binds = getActiveProfileBinds();
   const defBinds = window.DEFAULT_CONFIG.hotkeys.profiles["default"] || {};
+  const { conflicts, combos } = findHotkeyConflicts(binds);
 
   const groups = {
     sys: { title: t("groupHotkeysSys"), items: [] },
@@ -535,6 +581,12 @@ function renderHotkeysList() {
   });
 
   let html = "";
+  if (combos.length > 0) {
+    html += `<div class="conflict-banner">
+      <span class="conflict-banner-icon">!</span>
+      <span>${escapeHtml(t("hotkeyConflictsSummary", { combos: combos.join(", ") }))}</span>
+    </div>`;
+  }
   for (const gKey in groups) {
     const group = groups[gKey];
     if (group.items.length === 0) continue;
@@ -546,10 +598,14 @@ function renderHotkeysList() {
     group.items.forEach(item => {
       const isModified = JSON.stringify(item.assigned) !== JSON.stringify(item.defaults);
       const isRecording = recordingTarget && recordingTarget.actionKey === item.action.key;
+      const hasConflict = conflicts.has(item.action.key);
+      const titleHtml = hasConflict
+        ? `${item.title} <span class="conflict-badge" title="${escapeHtml(t("hotkeyConflictBadge"))}">!</span>`
+        : item.title;
 
       html += `<div class="keybind-row" data-action="${item.action.key}">
         <div class="setting-info">
-          <div class="setting-title">${item.title}</div>
+          <div class="setting-title">${titleHtml}</div>
           ${item.desc ? `<div class="setting-desc">${item.desc}</div>` : ''}
         </div>
         <div class="setting-control-group">
@@ -787,6 +843,16 @@ if (window.chrome && window.chrome.webview) {
     }
     if (msg && msg.action === "AUTOSTART_FAILED") {
       alert(t("autostartFailed"));
+    }
+    if (msg && msg.action === "SETTINGS_EXPORTED") {
+      if (msg.ok) alert(t("settingsExported", { path: msg.path }));
+      else alert(t("settingsExportFailed"));
+    }
+    if (msg && msg.action === "SETTINGS_IMPORTED") {
+      alert(t("settingsImported"));
+    }
+    if (msg && msg.action === "SETTINGS_IMPORT_FAILED") {
+      alert(t("settingsImportFailed"));
     }
     if (msg && msg.action === "LOAD_CONFIG" && msg.config) {
       currentConfig = deepMerge(window.DEFAULT_CONFIG, msg.config);

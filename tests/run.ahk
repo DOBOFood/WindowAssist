@@ -145,6 +145,90 @@ AssertEq("visibleHeight moved to general", legacy["general"]["titleBar"]["visibl
 AssertEq("schema version stamped", legacy["configVersion"], ConfigManager.SchemaVersion)
 AssertTrue("second migration run is a no-op", !ConfigManager.Migrate(legacy))
 
+; Schema 2 rebinds the keyboard defaults, but only where the old default is intact.
+v1 := Map(
+    "configVersion", 1,
+    "hotkeys", Map("profiles", Map(
+        "default", Map(
+            "window_move_left", ["NumLock + Alt + Left"],
+            "window_close", ["NumLock + Q"]
+        ),
+        "custom", Map(
+            "window_move_left", ["Ctrl + Shift + L"]
+        )
+    ))
+)
+AssertTrue("keyboard bindings migrate", ConfigManager.Migrate(v1))
+AssertEq("old default rebound", JSON.Dump(v1["hotkeys"]["profiles"]["default"]["window_move_left"]), '["NumLock + Left"]')
+AssertEq("custom binding kept", JSON.Dump(v1["hotkeys"]["profiles"]["custom"]["window_move_left"]), '["Ctrl + Shift + L"]')
+AssertEq("other bindings kept", JSON.Dump(v1["hotkeys"]["profiles"]["default"]["window_close"]), '["NumLock + Q"]')
+AssertEq("version bumped to schema 2", v1["configVersion"], 2)
+AssertTrue("rebind migration is idempotent", !ConfigManager.Migrate(v1))
+
+; ------------------------------------------------------------------- Import
+
+imported := ConfigManager.PrepareImported(Map(
+    "general", Map("windowMover", Map("safeZone", 33))
+))
+AssertEq("import keeps provided values", imported["general"]["windowMover"]["safeZone"], 33)
+AssertEq("import fills missing defaults", imported["general"]["windowMover"]["keyboardStep"], 20)
+AssertEq("import stamps schema version", imported["configVersion"], ConfigManager.SchemaVersion)
+AssertTrue("import provides default hotkeys", imported["hotkeys"]["profiles"]["default"].Has("window_move_left"))
+
+importError := ""
+try {
+    ConfigManager.PrepareImported("not a config")
+} catch as e {
+    importError := e.Message
+}
+AssertTrue("import rejects non-object payloads", importError != "")
+
+legacyImport := ConfigManager.PrepareImported(Map(
+    "titleBar", Map("visibleHeight", 77),
+    "general", Map()
+))
+AssertEq("import migrates legacy sections", legacyImport["general"]["titleBar"]["visibleHeight"], 77)
+AssertTrue("import drops legacy titleBar", !legacyImport.Has("titleBar"))
+
+ConfigManager.configData := Map("probe", 1)
+exportPath := A_ScriptDir "\tmp-export.json"
+AssertTrue("export writes a file", ConfigManager.ExportToFile(exportPath))
+AssertTrue("export contains config data", InStr(FileRead(exportPath, "UTF-8"), '"probe"') > 0)
+try FileDelete(exportPath)
+
+; ---------------------------------------------------------------- Snap zones
+
+zone := ComputeSnapZone(10, 10, 0, 0, 1000, 800, 20)
+AssertEq("snap top-left kind", zone["kind"], "quarter")
+AssertEq("snap top-left x", zone["x"], 0)
+AssertEq("snap top-left y", zone["y"], 0)
+AssertEq("snap top-left width", zone["w"], 500)
+AssertEq("snap top-left height", zone["h"], 400)
+
+zone := ComputeSnapZone(990, 10, 0, 0, 1000, 800, 20)
+AssertEq("snap top-right x", zone["x"], 500)
+AssertEq("snap top-right width", zone["w"], 500)
+
+zone := ComputeSnapZone(10, 790, 0, 0, 1000, 800, 20)
+AssertEq("snap bottom-left y", zone["y"], 400)
+
+zone := ComputeSnapZone(500, 5, 0, 0, 1000, 800, 20)
+AssertEq("snap top edge maximises", zone["kind"], "max")
+AssertEq("snap top edge height", zone["h"], 800)
+
+zone := ComputeSnapZone(5, 400, 0, 0, 1000, 800, 20)
+AssertEq("snap left half", zone["kind"], "left")
+AssertEq("snap left half width", zone["w"], 500)
+
+zone := ComputeSnapZone(995, 400, 0, 0, 1000, 800, 20)
+AssertEq("snap right half", zone["kind"], "right")
+
+zone := ComputeSnapZone(500, 795, 0, 0, 1000, 800, 20)
+AssertEq("snap bottom half", zone["kind"], "bottom")
+
+AssertEq("no snap in the middle", Type(ComputeSnapZone(500, 400, 0, 0, 1000, 800, 20)), "Integer")
+AssertEq("no snap on a degenerate monitor", Type(ComputeSnapZone(0, 0, 0, 0, 0, 0, 20)), "Integer")
+
 defaults := ConfigManager.GetDefaultConfig()
 AssertTrue("defaults carry configVersion", defaults.Has("configVersion"))
 AssertTrue("defaults have no legacy titleBar", !defaults.Has("titleBar"))
@@ -160,6 +244,11 @@ keyboardActions := [
 defaultBinds := defaults["hotkeys"]["profiles"]["default"]
 for actionKey in keyboardActions
     AssertTrue("default binding " actionKey, defaultBinds.Has(actionKey) && defaultBinds[actionKey].Length > 0)
+
+AssertEq("move left default", JSON.Dump(defaultBinds["window_move_left"]), '["NumLock + Left"]')
+AssertEq("move down default", JSON.Dump(defaultBinds["window_move_down"]), '["NumLock + Down"]')
+AssertEq("resize wider default", JSON.Dump(defaultBinds["window_resize_wider"]), '["NumLock + Alt + Right"]')
+AssertEq("resize shorter default", JSON.Dump(defaultBinds["window_resize_shorter"]), '["NumLock + Alt + Up"]')
 
 settingsJs := FileRead(A_ScriptDir "\..\web\js\settings.js", "UTF-8")
 for actionKey in keyboardActions
@@ -204,7 +293,9 @@ i18nText := FileRead(A_ScriptDir "\..\web\js\i18n.js", "UTF-8")
 for key in ["profileAlreadyExists", "defaultProfileName", "groupHotkeysSys",
             "groupHotkeysOverview", "groupHotkeysPocket", "groupHotkeysWorkspaces",
             "groupHotkeysWindow", "windowMoverKeyboardStep", "groupStartup",
-            "autostartEnabled", "autostartFailed",
+            "autostartEnabled", "autostartFailed", "groupData", "settingsExport",
+            "settingsImport", "settingsExported", "settingsImportFailed",
+            "hotkeyConflictBadge", "hotkeyConflictsSummary",
             "act_window_move_left", "act_window_move_right", "act_window_move_up",
             "act_window_move_down", "act_window_resize_wider", "act_window_resize_narrower",
             "act_window_resize_taller", "act_window_resize_shorter"] {

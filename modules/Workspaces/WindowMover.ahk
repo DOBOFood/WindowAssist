@@ -32,6 +32,66 @@ class WindowMover {
     }
 }
 
+; A click-through rectangle that previews where a dragged window will snap.
+class SnapPreview {
+    static gui := 0
+    static lastRect := ""
+
+    static Show(zone) {
+        rect := zone["x"] "," zone["y"] "," zone["w"] "," zone["h"]
+        if (this.gui && rect == this.lastRect)
+            return
+
+        if !this.gui {
+            this.gui := Gui("-Caption +ToolWindow +AlwaysOnTop +E0x20 +E0x08000000")
+            this.gui.BackColor := "0078D7"
+        }
+        this.gui.Show("NA x" zone["x"] " y" zone["y"] " w" zone["w"] " h" zone["h"])
+        try WinSetTransparent(110, this.gui.Hwnd)
+        this.lastRect := rect
+    }
+
+    static Hide() {
+        if this.gui
+            this.gui.Hide()
+        this.lastRect := ""
+    }
+}
+
+; Returns the zone under the cursor, or 0. Corners win over edges, the top
+; edge centre maximises (handled by the drag loop).
+ComputeSnapZone(curX, curY, mL, mT, mR, mB, threshold := 20) {
+    width := mR - mL
+    height := mB - mT
+    if (width <= 0 || height <= 0)
+        return 0
+
+    halfW := Round(width / 2)
+    halfH := Round(height / 2)
+    nearLeft := (curX <= mL + threshold)
+    nearRight := (curX >= mR - threshold)
+    nearTop := (curY <= mT + threshold)
+    nearBottom := (curY >= mB - threshold)
+
+    if (nearTop && nearLeft)
+        return Map("kind", "quarter", "x", mL, "y", mT, "w", halfW, "h", halfH)
+    if (nearTop && nearRight)
+        return Map("kind", "quarter", "x", mL + halfW, "y", mT, "w", width - halfW, "h", halfH)
+    if (nearBottom && nearLeft)
+        return Map("kind", "quarter", "x", mL, "y", mT + halfH, "w", halfW, "h", height - halfH)
+    if (nearBottom && nearRight)
+        return Map("kind", "quarter", "x", mL + halfW, "y", mT + halfH, "w", width - halfW, "h", height - halfH)
+    if nearTop
+        return Map("kind", "max", "x", mL, "y", mT, "w", width, "h", height)
+    if nearBottom
+        return Map("kind", "bottom", "x", mL, "y", mT + halfH, "w", width, "h", height - halfH)
+    if nearLeft
+        return Map("kind", "left", "x", mL, "y", mT, "w", halfW, "h", height)
+    if nearRight
+        return Map("kind", "right", "x", mL + halfW, "y", mT, "w", width - halfW, "h", height)
+    return 0
+}
+
 MoveWindowWithMouse() {
     global isMovingOrResizing, Rules, wsWindows, currentWorkspaces, titleBarInfo, desktopStates
     CoordMode("Mouse", "Screen")
@@ -141,6 +201,7 @@ MoveWindowWithMouse() {
 
         isInPocketWin := PocketManager.IsInPocket(winId)
         checkMonCount := 0
+        snapThreshold := 20
 
         while GetKeyState("LButton", "P") {
             MouseGetPos(&curX, &curY)
@@ -155,7 +216,8 @@ MoveWindowWithMouse() {
                 }
             }
 
-            if (curY <= mT + 1) {
+            ; Maximize only on the top edge centre, corners are snap zones.
+            if (curY <= mT + 1 && curX > mL + snapThreshold && curX < mR - snapThreshold) {
                 if (!wasSnappedMax) {
                     wasSnappedMax := true
                     DllCall("ShowWindow", "ptr", winId, "int", 3) ; SW_MAXIMIZE
@@ -192,6 +254,14 @@ MoveWindowWithMouse() {
                         PocketManager.UpdateBorder(winId)
                 }
             }
+
+            ; Show where the window will land; top-centre maximises live instead.
+            previewZone := ComputeSnapZone(curX, curY, mL, mT, mR, mB, snapThreshold)
+            if (previewZone && previewZone["kind"] != "max")
+                SnapPreview.Show(previewZone)
+            else
+                SnapPreview.Hide()
+
             DllCall("Sleep", "uint", 1)
         }
 
@@ -200,7 +270,22 @@ MoveWindowWithMouse() {
         mL := 0, mT := 0, mR := 0, mB := 0
         MonitorGet(wMon, &mL, &mT, &mR, &mB)
 
-        if (wasSnappedMax || endY <= mT + 1) {
+        SnapPreview.Hide()
+        appliedSnap := false
+        finalZone := ComputeSnapZone(endX, endY, mL, mT, mR, mB, snapThreshold)
+        if (finalZone && finalZone["kind"] != "max") {
+            if (wasSnappedMax) {
+                wasSnappedMax := false
+                DllCall("ShowWindow", "ptr", winId, "int", 9) ; SW_RESTORE
+            }
+            DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
+                , "int", finalZone["x"], "int", finalZone["y"]
+                , "int", finalZone["w"], "int", finalZone["h"]
+                , "uint", 0x0014) ; SWP_NOZORDER | SWP_NOACTIVATE
+            appliedSnap := true
+        }
+
+        if (!appliedSnap && (wasSnappedMax || endY <= mT + 1)) {
             DllCall("ShowWindow", "ptr", winId, "int", 3) ; SW_MAXIMIZE
             if wsWindows.Has(winId) {
                 oldMon := wsWindows[winId].mon
@@ -256,6 +341,7 @@ MoveWindowWithMouse() {
 
         SetTimer(() => SaveState(), -300)
     } finally {
+        SnapPreview.Hide()
         isMovingOrResizing := false
     }
 }

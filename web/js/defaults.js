@@ -13,7 +13,7 @@ const DEFAULT_CONFIG = {
       "workspaceBorderHover": "#0078D7"
     }
   },
-  "configVersion": 1,
+  "configVersion": 2,
   "general": {
     "altTab": {
       "enabled": 1,
@@ -85,31 +85,31 @@ const DEFAULT_CONFIG = {
           "NumLock"
         ],
         "window_move_down": [
-          "NumLock + Alt + Down"
+          "NumLock + Down"
         ],
         "window_move_left": [
-          "NumLock + Alt + Left"
+          "NumLock + Left"
         ],
         "window_move_right": [
-          "NumLock + Alt + Right"
+          "NumLock + Right"
         ],
         "window_move_up": [
-          "NumLock + Alt + Up"
+          "NumLock + Up"
         ],
         "window_pin": [
           "NumLock + E"
         ],
         "window_resize_narrower": [
-          "NumLock + Alt + Shift + Left"
+          "NumLock + Alt + Left"
         ],
         "window_resize_shorter": [
-          "NumLock + Alt + Shift + Up"
+          "NumLock + Alt + Up"
         ],
         "window_resize_taller": [
-          "NumLock + Alt + Shift + Down"
+          "NumLock + Alt + Down"
         ],
         "window_resize_wider": [
-          "NumLock + Alt + Shift + Right"
+          "NumLock + Alt + Right"
         ],
         "workspace_move_1": [
           "NumLock + Shift + 1"

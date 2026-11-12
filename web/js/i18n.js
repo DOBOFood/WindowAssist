@@ -140,6 +140,19 @@ const I18N = {
     autostartEnabled_desc: "Создаёт задачу планировщика с правами администратора, поэтому при входе не появляется запрос UAC.",
     autostartFailed: "Не удалось изменить автозапуск. Проверьте права администратора и попробуйте снова.",
 
+    groupData: "Настройки и профили",
+    settingsExport: "Экспорт настроек",
+    settingsExport_desc: "Сохранить все настройки и профили биндов в JSON-файл.",
+    settingsImport: "Импорт настроек",
+    settingsImport_desc: "Загрузить настройки из JSON-файла. Текущие настройки будут заменены.",
+    settingsExported: "Настройки сохранены: {path}",
+    settingsExportFailed: "Не удалось сохранить настройки.",
+    settingsImported: "Настройки загружены.",
+    settingsImportFailed: "Не удалось загрузить настройки: файл повреждён или это не конфиг WindowAssist.",
+
+    hotkeyConflictBadge: "Комбинация назначена другому действию",
+    hotkeyConflictsSummary: "Конфликты биндов: {combos}",
+
     groupTitleBar: "Скрытие заголовков окон (Title Bar)",
     titleBarAutoHide: "Автоматически скрывать заголовок окна",
     titleBarAutoHide_desc: "Скрывать верхнюю системную полосу с кнопками закрытия",
@@ -327,6 +340,19 @@ const I18N = {
     autostartEnabled: "Run at sign-in",
     autostartEnabled_desc: "Creates a Task Scheduler task with administrator rights, so no UAC prompt appears at sign-in.",
     autostartFailed: "Could not change autostart. Check administrator rights and try again.",
+
+    groupData: "Settings & Profiles",
+    settingsExport: "Export settings",
+    settingsExport_desc: "Save all settings and keybinding profiles to a JSON file.",
+    settingsImport: "Import settings",
+    settingsImport_desc: "Load settings from a JSON file. Current settings will be replaced.",
+    settingsExported: "Settings saved to {path}",
+    settingsExportFailed: "Could not save settings.",
+    settingsImported: "Settings loaded.",
+    settingsImportFailed: "Could not load settings: the file is damaged or not a WindowAssist config.",
+
+    hotkeyConflictBadge: "Shortcut is assigned to another action",
+    hotkeyConflictsSummary: "Keybinding conflicts: {combos}",
 
     groupTitleBar: "Window Title Bar Hiding",
     titleBarAutoHide: "Automatically Hide Title Bar",

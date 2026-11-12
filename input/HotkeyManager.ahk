@@ -497,6 +497,36 @@ SettingsIPCHandler(data, webInst) {
             }
         }
     }
+    else if (action == "EXPORT_SETTINGS") {
+        isRu := (ConfigManager.Get("language", "en") == "ru")
+        prompt := isRu ? "Экспорт настроек WindowAssist" : "Export WindowAssist settings"
+        path := FileSelectFile("S", A_ScriptDir "\WindowAssist-settings.json", prompt, "JSON (*.json)")
+        if (path != "") {
+            ok := ConfigManager.ExportToFile(path)
+            if (webInst)
+                WebViewManager.Send(webInst, Map("action", "SETTINGS_EXPORTED", "ok", ok, "path", path))
+        }
+    }
+    else if (action == "IMPORT_SETTINGS") {
+        isRu := (ConfigManager.Get("language", "en") == "ru")
+        prompt := isRu ? "Импорт настроек WindowAssist" : "Import WindowAssist settings"
+        path := FileSelectFile("", , prompt, "JSON (*.json)")
+        if (path != "") {
+            success := false
+            try {
+                imported := ConfigManager.PrepareImported(JSON.Load(FileRead(path, "UTF-8")))
+                success := ConfigManager.Save(imported)
+                if success {
+                    HotkeyManager.ApplyProfile()
+                    AutostartManager.Apply(ConfigManager.Get("general.autostart.enabled", false))
+                }
+            }
+            if (webInst) {
+                WebViewManager.Send(webInst, Map("action", "LOAD_CONFIG", "config", ConfigManager.configData))
+                WebViewManager.Send(webInst, Map("action", success ? "SETTINGS_IMPORTED" : "SETTINGS_IMPORT_FAILED"))
+            }
+        }
+    }
     else if (action == "SWITCH_KEYBIND_PROFILE") {
         if data.Has("profile") {
             newProf := data["profile"]

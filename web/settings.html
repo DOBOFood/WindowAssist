@@ -225,6 +225,36 @@
             </div>
           </div>
 
+          <!-- Data / settings transfer -->
+          <div class="settings-group">
+            <div class="group-title" data-i18n="groupData">Настройки и профили</div>
+            <div class="group-cards">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="settingsExport">Экспорт настроек</div>
+                  <div class="setting-desc" data-i18n="settingsExport_desc">Сохранить все настройки и профили биндов в JSON-файл.</div>
+                </div>
+                <div class="setting-control-group">
+                  <button class="btn-secondary" onclick="exportSettings()">
+                    <span data-i18n="settingsExport">Экспорт настроек</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="settingsImport">Импорт настроек</div>
+                  <div class="setting-desc" data-i18n="settingsImport_desc">Загрузить настройки из JSON-файла. Текущие настройки будут заменены.</div>
+                </div>
+                <div class="setting-control-group">
+                  <button class="btn-secondary" onclick="importSettings()">
+                    <span data-i18n="settingsImport">Импорт настроек</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- TitleBar -->
           <div class="settings-group">
             <div class="group-title" data-i18n="groupTitleBar">Скрытие Title Bar у приложений</div>

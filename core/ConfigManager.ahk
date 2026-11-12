@@ -1,9 +1,33 @@
 #Requires AutoHotkey v2.0
 
 class ConfigManager {
-    static SchemaVersion := 1
+    static SchemaVersion := 2
     static configPath := A_ScriptDir "\config.json"
     static configData := Map()
+
+    ; Keyboard defaults introduced in schema 1; schema 2 rebound them so plain
+    ; arrows move and Alt+arrows resize. Profiles that still hold the old
+    ; defaults are migrated, customized bindings are left alone.
+    static OldKeyboardBinds := Map(
+        "window_move_left", ["NumLock + Alt + Left"],
+        "window_move_right", ["NumLock + Alt + Right"],
+        "window_move_up", ["NumLock + Alt + Up"],
+        "window_move_down", ["NumLock + Alt + Down"],
+        "window_resize_wider", ["NumLock + Alt + Shift + Right"],
+        "window_resize_narrower", ["NumLock + Alt + Shift + Left"],
+        "window_resize_taller", ["NumLock + Alt + Shift + Down"],
+        "window_resize_shorter", ["NumLock + Alt + Shift + Up"]
+    )
+    static NewKeyboardBinds := Map(
+        "window_move_left", ["NumLock + Left"],
+        "window_move_right", ["NumLock + Right"],
+        "window_move_up", ["NumLock + Up"],
+        "window_move_down", ["NumLock + Down"],
+        "window_resize_wider", ["NumLock + Alt + Right"],
+        "window_resize_narrower", ["NumLock + Alt + Left"],
+        "window_resize_taller", ["NumLock + Alt + Down"],
+        "window_resize_shorter", ["NumLock + Alt + Up"]
+    )
 
     static GetDefaultConfig() {
         return Map(
@@ -26,14 +50,14 @@ class ConfigManager {
                         "window_minimize", ["NumLock + A"],
                         "window_mouse_modifier", ["NumLock"],
                         "window_pin", ["NumLock + E"],
-                        "window_move_left", ["NumLock + Alt + Left"],
-                        "window_move_right", ["NumLock + Alt + Right"],
-                        "window_move_up", ["NumLock + Alt + Up"],
-                        "window_move_down", ["NumLock + Alt + Down"],
-                        "window_resize_wider", ["NumLock + Alt + Shift + Right"],
-                        "window_resize_narrower", ["NumLock + Alt + Shift + Left"],
-                        "window_resize_taller", ["NumLock + Alt + Shift + Down"],
-                        "window_resize_shorter", ["NumLock + Alt + Shift + Up"],
+                        "window_move_left", ["NumLock + Left"],
+                        "window_move_right", ["NumLock + Right"],
+                        "window_move_up", ["NumLock + Up"],
+                        "window_move_down", ["NumLock + Down"],
+                        "window_resize_wider", ["NumLock + Alt + Right"],
+                        "window_resize_narrower", ["NumLock + Alt + Left"],
+                        "window_resize_taller", ["NumLock + Alt + Down"],
+                        "window_resize_shorter", ["NumLock + Alt + Up"],
                         "workspace_move_1", ["NumLock + Shift + 1"],
                         "workspace_move_2", ["NumLock + Shift + 2"],
                         "workspace_move_3", ["NumLock + Shift + 3"],
@@ -163,12 +187,53 @@ class ConfigManager {
                 changed := true
         }
 
+        if (version < 2 && this._RebindKeyboardDefaults(config))
+            changed := true
+
         if (!config.Has("configVersion") || version != this.SchemaVersion) {
             config["configVersion"] := this.SchemaVersion
             changed := true
         }
 
         return changed
+    }
+
+    static _RebindKeyboardDefaults(config) {
+        if (!config.Has("hotkeys") || !(config["hotkeys"] is Map))
+            return false
+        hotkeys := config["hotkeys"]
+        if (!hotkeys.Has("profiles") || !(hotkeys["profiles"] is Map))
+            return false
+
+        changed := false
+        for profileName, profile in hotkeys["profiles"] {
+            if !(profile is Map)
+                continue
+            for actionKey, oldValue in this.OldKeyboardBinds {
+                if !profile.Has(actionKey) || !this._SameList(profile[actionKey], oldValue)
+                    continue
+                profile[actionKey] := this._CloneList(this.NewKeyboardBinds[actionKey])
+                changed := true
+            }
+        }
+        return changed
+    }
+
+    static _SameList(a, b) {
+        if !(a is Array) || !(b is Array) || a.Length != b.Length
+            return false
+        Loop a.Length {
+            if (a[A_Index] != b[A_Index])
+                return false
+        }
+        return true
+    }
+
+    static _CloneList(list) {
+        copy := []
+        for value in list
+            copy.Push(value)
+        return copy
     }
 
     static _AbsorbLegacySection(config, legacyKey, parentKey, targetKey, override) {
@@ -212,6 +277,34 @@ class ConfigManager {
         } catch {
             return false
         }
+    }
+
+    static ExportToFile(path) {
+        try {
+            if FileExist(path)
+                FileDelete(path)
+            FileAppend(JSON.Dump(this.configData, "  "), path, "UTF-8")
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /**
+     * Validates imported JSON, migrates it and fills in missing defaults.
+     * Throws when the payload is not a config object.
+     */
+    static PrepareImported(data) {
+        if !(data is Map)
+            throw ValueError("Config must be a JSON object")
+
+        data := this._NormalizeParsedJSON(data)
+        this.Migrate(data)
+
+        defaults := this.GetDefaultConfig()
+        if (!data.Has("hotkeys") || !(data["hotkeys"] is Map))
+            data["hotkeys"] := defaults["hotkeys"]
+        return this._MergeMaps(defaults, data)
     }
 
     static Get(keyPath, defaultVal := "") {

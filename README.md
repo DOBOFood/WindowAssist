@@ -76,6 +76,8 @@ https://github.com/user-attachments/assets/d25daead-d1e1-4dec-b453-c7d0096dc5f1
 
 * **Drag Anywhere:** Hold your modifier key and drag <kbd>Left Mouse Button</kbd> anywhere inside a window to move it.
 * **Resize Anywhere:** Hold your modifier key and drag <kbd>Right Mouse Button</kbd> anywhere inside a window to resize from the closest edge or corner.
+* **Snap Zones:** Drag to a screen edge or corner to snap the window to a half or quarter, with a live preview of the target.
+* **Keyboard Control:** Move with your modifier and arrow keys, resize with an extra <kbd>Alt</kbd>; the step size is configurable.
 
 ---
 
@@ -132,6 +134,8 @@ https://github.com/user-attachments/assets/762e965c-3af6-4151-8522-dfd69f56cb17
 * **Multiple Profiles:** Create, duplicate, rename, or restore different shortcut setups.
 * **Bilingual UI:** Native support for both English and Russian.
 * **Run at sign-in:** Optional autostart through a Task Scheduler task with administrator rights, so no UAC prompt appears at logon.
+* **Backup & Transfer:** Export and import all settings and keybinding profiles as a JSON file.
+* **Conflict Warnings:** Actions that share the same shortcut are flagged in the keybinding list.
 
 ---
 
@@ -147,8 +151,8 @@ https://github.com/user-attachments/assets/762e965c-3af6-4151-8522-dfd69f56cb17
 | **Previous / Next Desktop** | <kbd>NumLock</kbd> + <kbd>Z</kbd> / <kbd>X</kbd> *(or <kbd>WheelUp</kbd> / <kbd>WheelDown</kbd>)* |
 | **Move Window Anywhere** | Hold <kbd>NumLock</kbd> + Drag <kbd>LButton</kbd> |
 | **Resize Window Anywhere** | Hold <kbd>NumLock</kbd> + Drag <kbd>RButton</kbd> |
-| **Move Window (keyboard)** | <kbd>NumLock</kbd> + <kbd>Alt</kbd> + <kbd>←</kbd> / <kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd> |
-| **Resize Window (keyboard)** | <kbd>NumLock</kbd> + <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd> |
+| **Move Window (keyboard)** | <kbd>NumLock</kbd> + <kbd>←</kbd> / <kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd> |
+| **Resize Window (keyboard)** | <kbd>NumLock</kbd> + <kbd>Alt</kbd> + <kbd>←</kbd> / <kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd> |
 | **Layer Peeker (Cycle overlapping)** | <kbd>NumLock</kbd> + Click <kbd>LButton</kbd> |
 | **Pin Window on Top** | <kbd>NumLock</kbd> + Click <kbd>RButton</kbd> |
 | **Add / Remove Window to Pocket** | <kbd>NumLock</kbd> + <kbd>C</kbd> |

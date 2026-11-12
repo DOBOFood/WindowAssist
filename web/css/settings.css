@@ -768,3 +768,48 @@ body, html {
   font-style: italic;
   margin-right: 4px;
 }
+
+/* Hotkey conflict warnings */
+.conflict-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: rgba(251, 191, 36, 0.10);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  color: #fbbf24;
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.conflict-banner-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #fbbf24;
+  color: #1a1a1a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.conflict-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #fbbf24;
+  color: #1a1a1a;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+  cursor: help;
+  vertical-align: middle;
+}
