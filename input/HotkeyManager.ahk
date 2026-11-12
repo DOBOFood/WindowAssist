@@ -500,8 +500,11 @@ SettingsIPCHandler(data, webInst) {
     else if (action == "EXPORT_SETTINGS") {
         isRu := (ConfigManager.Get("language", "en") == "ru")
         prompt := isRu ? "Экспорт настроек WindowAssist" : "Export WindowAssist settings"
-        path := FileSelectFile("S", A_ScriptDir "\WindowAssist-settings.json", prompt, "JSON (*.json)")
+        path := FileSelect("S16", A_ScriptDir "\WindowAssist-settings.json", prompt, "JSON (*.json)")
         if (path != "") {
+            SplitPath(path, , , &extension)
+            if (extension == "")
+                path .= ".json"
             ok := ConfigManager.ExportToFile(path)
             if (webInst)
                 WebViewManager.Send(webInst, Map("action", "SETTINGS_EXPORTED", "ok", ok, "path", path))
@@ -510,7 +513,7 @@ SettingsIPCHandler(data, webInst) {
     else if (action == "IMPORT_SETTINGS") {
         isRu := (ConfigManager.Get("language", "en") == "ru")
         prompt := isRu ? "Импорт настроек WindowAssist" : "Import WindowAssist settings"
-        path := FileSelectFile("", , prompt, "JSON (*.json)")
+        path := FileSelect(3, , prompt, "JSON (*.json)")
         if (path != "") {
             success := false
             try {

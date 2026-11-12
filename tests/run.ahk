@@ -330,6 +330,18 @@ if (A_AhkPath != "") {
     AssertEq("web/js/defaults.js is generated and current", genExit, 0)
 }
 
+; ------------------------------------------------------- AHK v1 leftovers
+
+; AHK v1 built-ins that no longer exist in v2. They only produce a VarUnset
+; warning at runtime (not caught by /validate), so scan the sources instead.
+; Needles are built by concatenation so this file does not match itself.
+v1Needles := ["FileSelect" "File", "FileSelect" "Folder", "StringRe" "place(", "StringSp" "lit(", "FileRead" "Line("]
+Loop Files, A_ScriptDir "\..\*.ahk", "R" {
+    content := FileRead(A_LoopFileFullPath, "UTF-8")
+    for needle in v1Needles
+        AssertTrue("no v1 API " needle " in " A_LoopFileName, !InStr(content, needle))
+}
+
 ; --------------------------------------------------------------------- Report
 
 summary := (gFail = 0 ? "PASS" : "FAIL") " - " (gRun - gFail) "/" gRun " tests passed`n"
