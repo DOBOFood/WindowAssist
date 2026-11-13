@@ -35,6 +35,9 @@ class ConfigManager {
             "language", "en",
             "hotkeys", Map(
                 "activeProfile", "default",
+                "primaryModifiers", Map(
+                    "default", "NumLock"
+                ),
                 "profiles", Map(
                     "default", Map(
                         "alt_tab", ["Alt + Tab"],
@@ -112,6 +115,7 @@ class ConfigManager {
                 )
             ),
             "appearance", Map(
+                "settingsTheme", "auto",
                 "animationsEnabled", true,
                 "animationDurationMs", 200,
                 "colors", Map(
@@ -122,13 +126,20 @@ class ConfigManager {
                     "pocketWindowBorder", "#FFDB58",
                     "pocketBorderWidth", 2
                 ),
+                "overview", Map(
+                    "design", "default",
+                    "cornerRadius", 12,
+                    "backgroundColor", "#000000",
+                    "backgroundOpacity", 50
+                ),
                 "osd", Map(
                     "backgroundColor", "#1A1A1A",
                     "backgroundOpacity", 100,
                     "textColor", "#FFFFFF",
                     "borderColor", "#3D3D3D",
                     "borderWidth", 1,
-                    "borderTransparent", false
+                    "borderTransparent", false,
+                    "cornerRadius", 10
                 )
             ),
             "workspaces", Map(

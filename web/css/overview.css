@@ -2,6 +2,8 @@
   --anim-duration: 200ms;
   --col-ws-border: #0078D7;
   --col-pocket-theme: #FFD700;
+  --ov-radius: 12px;
+  --ov-bg: rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -14,7 +16,7 @@ body, html {
   padding: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--ov-bg);
   font-family: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
   overflow: hidden;
   color: #fff;
@@ -53,7 +55,7 @@ body, html {
   border: none;
   outline: none;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: calc(var(--ov-radius) * 0.5);
   padding: 4px;
   transition: background-color 0.15s ease, opacity 0.15s ease;
   z-index: 100;
@@ -156,7 +158,7 @@ body, html {
   width: 100%;
   gap: 10px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--ov-radius);
   background: rgba(28, 28, 31, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
@@ -203,7 +205,7 @@ body, html {
   background: rgba(32, 32, 35, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-left: 3px solid var(--col-pocket-theme);
-  border-radius: 8px;
+  border-radius: calc(var(--ov-radius) * 0.67);
   cursor: grab;
   transition: transform var(--anim-duration) ease, border-color var(--anim-duration) ease, box-shadow var(--anim-duration) ease, background var(--anim-duration) ease;
 }
@@ -267,7 +269,7 @@ body, html {
   position: fixed;
   background: rgba(28, 28, 31, 0.95);
   border: 1px solid rgba(255, 215, 0, 0.6);
-  border-radius: 8px;
+  border-radius: calc(var(--ov-radius) * 0.67);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
   padding: 4px;
   z-index: 999999;
@@ -291,7 +293,7 @@ body, html {
 .pocket-preview-popup img {
   max-width: 100%;
   max-height: 100%;
-  border-radius: 6px;
+  border-radius: calc(var(--ov-radius) * 0.5);
   object-fit: contain;
   display: block;
 }
@@ -310,7 +312,7 @@ body, html {
   gap: 12px;
   width: 100%;
   min-width: 0;
-  border-radius: 14px;
+  border-radius: calc(var(--ov-radius) * 1.15);
   padding: 4px;
   transition: background 0.15s ease;
   height: 100%;
@@ -329,7 +331,7 @@ body, html {
   min-height: 130px;
   background: rgba(28, 28, 31, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
+  border-radius: var(--ov-radius);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -353,7 +355,7 @@ body, html {
   background: rgba(32, 32, 35, 0.95);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  border-radius: calc(var(--ov-radius) * 0.67);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
   padding: 6px;
   min-width: 220px;
@@ -427,7 +429,7 @@ body, html {
   padding: 6px 4px;
   background: rgba(32, 32, 35, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
+  border-radius: calc(var(--ov-radius) * 0.67);
   cursor: grab;
   text-align: center;
   transition: background var(--anim-duration), border-color var(--anim-duration), transform var(--anim-duration);
@@ -466,7 +468,7 @@ body, html {
   padding: 6px 10px;
   background: rgba(28, 28, 31, 0.95);
   border: 1px solid #0078D7;
-  border-radius: 8px;
+  border-radius: calc(var(--ov-radius) * 0.67);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   z-index: 999999;
   pointer-events: none;
@@ -529,7 +531,7 @@ body, html {
   backdrop-filter: blur(25px) saturate(180%);
   -webkit-backdrop-filter: blur(25px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  border-radius: calc(var(--ov-radius) * 0.83);
   padding: 6px;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
   display: flex;
@@ -586,7 +588,7 @@ body, html {
   align-items: center;
   gap: 10px;
   padding: 7px 10px;
-  border-radius: 6px;
+  border-radius: calc(var(--ov-radius) * 0.5);
   font-size: 13px;
   color: #f3f3f3;
   cursor: pointer;
@@ -619,4 +621,223 @@ body, html {
 .jumplist-menu .menu-item.danger:hover {
   background: rgba(232, 17, 35, 0.8);
   color: #fff;
+}
+
+/* ============================================================================
+   Alternative Overview Designs (default stays unchanged above)
+   ============================================================================ */
+
+/* --- Design: Frosted Glass (glass) --- */
+html[data-design="glass"] .pocket-section,
+html[data-design="glass"] .workspace-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+html[data-design="glass"] .workspace-card:hover {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.38);
+}
+
+html[data-design="glass"] .workspace-card.current {
+  border: 2px solid var(--col-ws-border);
+  box-shadow: 0 0 24px rgba(0, 120, 215, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+html[data-design="glass"] .workspace-card.add-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px dashed rgba(255, 255, 255, 0.28);
+}
+
+html[data-design="glass"] .app-item,
+html[data-design="glass"] .pocket-app-item {
+  background: rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+html[data-design="glass"] .app-item:hover,
+html[data-design="glass"] .pocket-app-item:hover {
+  background: rgba(255, 255, 255, 0.17);
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
+html[data-design="glass"] .pocket-divider {
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.22), transparent);
+}
+
+/* --- Design: Minimalist (minimal) --- */
+html[data-design="minimal"] .pocket-section {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html[data-design="minimal"] .pocket-section:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-design="minimal"] .pocket-divider {
+  opacity: 0.35;
+}
+
+html[data-design="minimal"] .workspace-card {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+html[data-design="minimal"] .workspace-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+html[data-design="minimal"] .workspace-card.current {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 -3px 0 0 var(--col-ws-border);
+}
+
+html[data-design="minimal"] .workspace-card.add-card {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+}
+
+html[data-design="minimal"] .ws-number {
+  font-size: 38px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+html[data-design="minimal"] .app-item,
+html[data-design="minimal"] .pocket-app-item {
+  background: transparent;
+  border-color: transparent;
+}
+
+html[data-design="minimal"] .pocket-app-item {
+  border-left: 3px solid var(--col-pocket-theme);
+}
+
+html[data-design="minimal"] .app-item:hover,
+html[data-design="minimal"] .pocket-app-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+/* --- Design: Compact (compact) --- */
+html[data-design="compact"] #workspaces-grid {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+html[data-design="compact"] .workspace-column {
+  gap: 8px;
+}
+
+html[data-design="compact"] .workspace-card {
+  aspect-ratio: 16 / 6.5;
+  min-height: 86px;
+}
+
+html[data-design="compact"] .ws-number {
+  font-size: 32px;
+}
+
+html[data-design="compact"] .workspace-card.add-card .ws-number {
+  font-size: 34px;
+}
+
+html[data-design="compact"] .app-list {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 5px;
+  min-height: 44px;
+}
+
+html[data-design="compact"] .app-item {
+  flex-direction: row;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 8px;
+  gap: 8px;
+  text-align: left;
+}
+
+html[data-design="compact"] .app-icon {
+  width: 20px;
+  height: 20px;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+html[data-design="compact"] .app-title {
+  max-width: none;
+  flex: 1;
+  font-size: 12px;
+  text-align: left;
+}
+
+/* --- Design: High Contrast (high_contrast) --- */
+html[data-design="high_contrast"] .pocket-section,
+html[data-design="high_contrast"] .workspace-card {
+  background: #08080a;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.8);
+}
+
+html[data-design="high_contrast"] .workspace-card:hover {
+  border-color: rgba(255, 255, 255, 0.72);
+}
+
+html[data-design="high_contrast"] .workspace-card.current {
+  border: 2px solid var(--col-ws-border);
+  box-shadow: 0 0 0 1px var(--col-ws-border), 0 8px 24px rgba(0, 0, 0, 0.85);
+}
+
+html[data-design="high_contrast"] .app-item,
+html[data-design="high_contrast"] .pocket-app-item {
+  background: #0e0e12;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+html[data-design="high_contrast"] .pocket-app-item {
+  border-left: 3px solid var(--col-pocket-theme);
+}
+
+html[data-design="high_contrast"] .app-item:hover,
+html[data-design="high_contrast"] .pocket-app-item:hover {
+  background: #1a1a22;
+  border-color: #ffffff;
+}
+
+html[data-design="high_contrast"] .pocket-divider {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* ============================================================================
+   Disabled Animations (animationsEnabled = false)
+   ============================================================================ */
+
+html[data-animations="off"] *,
+html[data-animations="off"] *::before,
+html[data-animations="off"] *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+html[data-animations="off"] .workspace-card:hover,
+html[data-animations="off"] .app-item:hover,
+html[data-animations="off"] .pocket-app-item:hover,
+html[data-animations="off"] .pocket-preview-popup,
+html[data-animations="off"] .pocket-preview-popup.visible {
+  transform: none !important;
 }

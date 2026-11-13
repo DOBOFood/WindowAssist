@@ -162,8 +162,10 @@ class OverviewController {
 
         pocketApps := PocketManager.GetOverviewData()
 
+        animEnabled := !!ConfigManager.Get("appearance.animationsEnabled", true)
         animDuration := ConfigManager.Get("appearance.animationDurationMs", 200)
         appColors := ConfigManager.Get("appearance.colors", Map())
+        appOverview := ConfigManager.Get("appearance.overview", Map("design", "default", "cornerRadius", 12, "backgroundColor", "#000000", "backgroundOpacity", 50))
         appLang := ConfigManager.Get("language", "en")
 
         payload := Map(
@@ -171,8 +173,10 @@ class OverviewController {
             "currentWs", curWs,
             "workspaces", workspacesArr,
             "pocketApps", pocketApps,
+            "animationsEnabled", animEnabled ? 1 : 0,
             "animDuration", animDuration,
             "colors", appColors,
+            "overview", appOverview,
             "language", appLang
         )
         WebViewManager.Send(this.webInstance, payload)

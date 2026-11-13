@@ -69,6 +69,7 @@ MinimizeActiveWindow() {
 
 class HotkeyManager {
     static activeBinds := []
+    static activePrefixHooks := []
     static currentModifiers := ["NumLock + Shift"]
     static isRecording := false
 
@@ -141,22 +142,65 @@ class HotkeyManager {
         this.RegisterPrefixHooks()
     }
 
-    static RegisterPrefixHooks() {
+    static _AddPrefixHook(hk, fn) {
         try {
-            Hotkey("*NumLock", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0), "On")
-            Hotkey("*NumLock Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0), "On")
-            Hotkey("~*LShift Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0), "On")
-            Hotkey("~*RShift Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0), "On")
-            Hotkey("~*LShift", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0), "On")
-            Hotkey("~*RShift", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0), "On")
+            Hotkey(hk, fn, "On")
+            this.activePrefixHooks.Push(hk)
         }
+    }
 
+    static RegisterPrefixHooks() {
+        for hk in this.activePrefixHooks {
+            try Hotkey(hk, "Off")
+        }
+        this.activePrefixHooks := []
+
+        seenTokens := Map()
         for pref in this.currentModifiers {
             s := Trim(pref)
             if (s == "")
                 continue
-            
+
             parts := StrSplit(s, "+")
+            for rawPart in parts {
+                p := Trim(rawPart)
+                if (p == "")
+                    continue
+                pLower := StrLower(p)
+                if seenTokens.Has(pLower)
+                    continue
+                seenTokens[pLower] := true
+
+                switch p, false {
+                    case "Shift":
+                        this._AddPrefixHook("~*LShift", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0))
+                        this._AddPrefixHook("~*LShift Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0))
+                        this._AddPrefixHook("~*RShift", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0))
+                        this._AddPrefixHook("~*RShift Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0))
+                    case "Ctrl", "Control":
+                        this._AddPrefixHook("~*LCtrl", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0))
+                        this._AddPrefixHook("~*LCtrl Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0))
+                        this._AddPrefixHook("~*RCtrl", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0))
+                        this._AddPrefixHook("~*RCtrl Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0))
+                    case "Alt":
+                        this._AddPrefixHook("~*LAlt", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0))
+                        this._AddPrefixHook("~*LAlt Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0))
+                        this._AddPrefixHook("~*RAlt", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0))
+                        this._AddPrefixHook("~*RAlt Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0))
+                    case "Win":
+                        this._AddPrefixHook("~*LWin", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0))
+                        this._AddPrefixHook("~*LWin Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0))
+                        this._AddPrefixHook("~*RWin", (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0))
+                        this._AddPrefixHook("~*RWin Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0))
+                    case "NumLock", "CapsLock", "ScrollLock":
+                        this._AddPrefixHook("*" p, (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0))
+                        this._AddPrefixHook("*" p " Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0))
+                    default:
+                        this._AddPrefixHook("~*" p, (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0))
+                        this._AddPrefixHook("~*" p " Up", (*) => (!this.AreMovePrefixKeysPressed() ? EndPendingMove() : 0))
+                }
+            }
+
             lastPart := Trim(parts[parts.Length])
             mods := ""
             Loop parts.Length - 1 {
@@ -169,12 +213,9 @@ class HotkeyManager {
                 }
             }
 
-            try {
-                downKey := "~*" mods lastPart
-                upKey := "~*" mods lastPart " Up"
-                
-                Hotkey(downKey, (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0), "On")
-                Hotkey(upKey, (*) => EndPendingMove(), "On")
+            if (mods != "") {
+                this._AddPrefixHook("~*" mods lastPart, (*) => (this.AreMovePrefixKeysPressed() ? StartPendingMove() : 0))
+                this._AddPrefixHook("~*" mods lastPart " Up", (*) => EndPendingMove())
             }
         }
     }
@@ -388,7 +429,8 @@ class HotkeyManager {
                     Map("key", otherPrefix " & LShift", "cond", cond),
                     Map("key", otherPrefix " & RShift", "cond", cond)
                 ]
-            return [Map("key", otherPrefix " & " key, "cond", cond)]
+            ahkKey := (StrLen(key) == 1) ? StrLower(key) : key
+            return [Map("key", otherPrefix " & " ahkKey, "cond", cond)]
         }
 
         ; Combinations using NumLock as a custom prefix key
@@ -420,11 +462,26 @@ class HotkeyManager {
     }
 }
 
+ApplySettingsWindowTheme(hwnd) {
+    if (!hwnd || !WinExist("ahk_id " hwnd))
+        return
+    pref := ConfigManager.Get("appearance.settingsTheme", "auto")
+    if (pref == "dark")
+        isDark := 1
+    else if (pref == "light")
+        isDark := 0
+    else
+        isDark := Theme.Read()["dark"] ? 1 : 0
+    try SetDwmAttribute(hwnd, 20, isDark)
+    try SetDwmAttribute(hwnd, 19, isDark)
+}
+
 OpenSettingsWindow() {
     static settingsGui := 0
     static webInst := 0
 
     if (settingsGui && WinExist("ahk_id " settingsGui.Hwnd)) {
+        ApplySettingsWindowTheme(settingsGui.Hwnd)
         WinActivate("ahk_id " settingsGui.Hwnd)
         if (webInst)
             WebViewManager.Send(webInst, Map("action", "LOAD_CONFIG", "config", ConfigManager.configData))
@@ -432,9 +489,10 @@ OpenSettingsWindow() {
     }
 
     settingsGui := Gui("+Resize", "WindowAssist Settings")
+    ApplySettingsWindowTheme(settingsGui.Hwnd)
     htmlFile := A_ScriptDir "\web\settings.html"
     
-    onMsg := (data) => SettingsIPCHandler(data, webInst)
+    onMsg := (data) => SettingsIPCHandler(data, webInst, settingsGui)
 
     webInst := WebViewManager.Create(settingsGui.Hwnd, htmlFile, onMsg)
     if (!webInst) {
@@ -461,7 +519,7 @@ OpenSettingsWindow() {
     SetTimer(() => WebViewManager.Send(webInst, Map("action", "LOAD_CONFIG", "config", ConfigManager.configData)), -600)
 }
 
-SettingsIPCHandler(data, webInst) {
+SettingsIPCHandler(data, webInst, settingsGui := 0) {
     if !(data is Map) || !data.Has("action")
         return
 
@@ -473,6 +531,8 @@ SettingsIPCHandler(data, webInst) {
             WebViewManager.Send(webInst, Map("action", "APP_INFO", "version", App.Version))
             WebViewManager.Send(webInst, Theme.Payload())
         }
+        if (settingsGui)
+            ApplySettingsWindowTheme(settingsGui.Hwnd)
     }
     else if (action == "START_KEY_RECORDING") {
         HotkeyManager.StartRecording()
@@ -484,11 +544,35 @@ SettingsIPCHandler(data, webInst) {
         kind := data.Has("kind") ? String(data["kind"]) : "1"
         ShowOSD(kind)
     }
+    else if (action == "APPLY_PRIMARY_MODIFIER") {
+        if (data.Has("profile") && data.Has("primaryModifier") && data.Has("binds")) {
+            pName := String(data["profile"])
+            newMod := String(data["primaryModifier"])
+            binds := (data["binds"] is Map) ? data["binds"] : Map()
+
+            profiles := ConfigManager.Get("hotkeys.profiles", Map())
+            profiles[pName] := binds
+            ConfigManager.Set("hotkeys.profiles", profiles)
+
+            primaryMods := ConfigManager.Get("hotkeys.primaryModifiers", Map())
+            if !(primaryMods is Map)
+                primaryMods := Map()
+            primaryMods[pName] := newMod
+            ConfigManager.Set("hotkeys.primaryModifiers", primaryMods)
+
+            HotkeyManager.ApplyProfile(pName)
+        }
+    }
     else if (action == "SET_SETTING") {
         if (data.Has("key") && data.Has("value")) {
             keyPath := data["key"]
             val := data["value"]
             ConfigManager.Set(keyPath, val)
+
+            if (keyPath == "appearance.settingsTheme" || keyPath == "appearance") {
+                if (settingsGui)
+                    ApplySettingsWindowTheme(settingsGui.Hwnd)
+            }
 
             if (keyPath == "general.autostart.enabled" && !AutostartManager.Apply(val)) {
                 ConfigManager.Set(keyPath, !val)
@@ -550,6 +634,13 @@ SettingsIPCHandler(data, webInst) {
             profiles := ConfigManager.Get("hotkeys.profiles", Map())
             profiles[pName] := binds
             ConfigManager.Set("hotkeys.profiles", profiles)
+            if data.Has("primaryModifier") {
+                primaryMods := ConfigManager.Get("hotkeys.primaryModifiers", Map())
+                if !(primaryMods is Map)
+                    primaryMods := Map()
+                primaryMods[pName] := String(data["primaryModifier"])
+                ConfigManager.Set("hotkeys.primaryModifiers", primaryMods)
+            }
             ConfigManager.Set("hotkeys.activeProfile", pName)
             HotkeyManager.ApplyProfile(pName)
         }
@@ -564,6 +655,15 @@ SettingsIPCHandler(data, webInst) {
                 profiles.Delete(oldName)
                 profiles[newName] := binds
                 ConfigManager.Set("hotkeys.profiles", profiles)
+
+                primaryMods := ConfigManager.Get("hotkeys.primaryModifiers", Map())
+                if (primaryMods is Map && primaryMods.Has(oldName)) {
+                    pm := primaryMods[oldName]
+                    primaryMods.Delete(oldName)
+                    primaryMods[newName] := pm
+                    ConfigManager.Set("hotkeys.primaryModifiers", primaryMods)
+                }
+
                 ConfigManager.Set("hotkeys.activeProfile", newName)
                 HotkeyManager.ApplyProfile(newName)
             }
@@ -577,6 +677,13 @@ SettingsIPCHandler(data, webInst) {
                 if profiles.Has(pName)
                     profiles.Delete(pName)
                 ConfigManager.Set("hotkeys.profiles", profiles)
+
+                primaryMods := ConfigManager.Get("hotkeys.primaryModifiers", Map())
+                if (primaryMods is Map && primaryMods.Has(pName)) {
+                    primaryMods.Delete(pName)
+                    ConfigManager.Set("hotkeys.primaryModifiers", primaryMods)
+                }
+
                 ConfigManager.Set("hotkeys.activeProfile", "default")
                 HotkeyManager.ApplyProfile("default")
             }

@@ -339,8 +339,14 @@ for key in ["profileAlreadyExists", "defaultProfileName", "groupHotkeysSys",
             "act_window_move_down", "act_window_resize_wider", "act_window_resize_narrower",
             "act_window_resize_taller", "act_window_resize_shorter",
             "groupOsdDesign", "osdPreview", "osdBgColor", "osdBgOpacity",
-            "osdTextColor", "osdBorderTransparent", "osdBorderColor", "osdBorderWidth"] {
-    count := CountText(i18nText, key ":")
+            "osdTextColor", "osdBorderTransparent", "osdBorderColor", "osdBorderWidth",
+            "osdCornerRadius", "primaryModifierTitle", "primaryModifierDesc", "changePrimaryModBtn",
+            "groupSettingsTheme", "settingsTheme", "theme_auto", "theme_light", "theme_dark",
+            "groupOverviewDesign", "overviewDesign", "overviewDesign_default",
+            "overviewDesign_glass", "overviewDesign_minimal", "overviewDesign_compact",
+            "overviewDesign_high_contrast", "overviewCornerRadius",
+            "overviewBgColor", "overviewBgOpacity"] {
+    count := CountText(i18nText, "    " key ":")
     AssertEq("i18n key " key " exists in ru and en", count, 2)
 }
 
@@ -416,6 +422,7 @@ AssertEq("OSD default textColor", osdDef.textColor, "#FFFFFF")
 AssertEq("OSD default borderTransparent", osdDef.borderTransparent ? 1 : 0, 0)
 AssertEq("OSD default borderColor", osdDef.borderColor, "#3D3D3D")
 AssertEq("OSD default borderWidth", osdDef.borderWidth, 1)
+AssertEq("OSD default cornerRadius", osdDef.cornerRadius, 10)
 
 ConfigManager.configData := Map(
     "general", Map("osd", Map("fontSize", 20)),
@@ -425,7 +432,8 @@ ConfigManager.configData := Map(
         "textColor", "#AABBCC",
         "borderTransparent", true,
         "borderColor", "#445566",
-        "borderWidth", 4
+        "borderWidth", 4,
+        "cornerRadius", 0
     ))
 )
 osdCustom := OsdRenderer.ResolveStyle()
@@ -436,6 +444,15 @@ AssertEq("OSD custom textColor", osdCustom.textColor, "#AABBCC")
 AssertEq("OSD custom borderTransparent", osdCustom.borderTransparent ? 1 : 0, 1)
 AssertEq("OSD custom borderColor", osdCustom.borderColor, "#445566")
 AssertEq("OSD custom borderWidth", osdCustom.borderWidth, 4)
+AssertEq("OSD custom cornerRadius zero", osdCustom.cornerRadius, 0)
+
+defaultsAll := ConfigManager.GetDefaultConfig()
+AssertEq("settingsTheme default is auto", defaultsAll["appearance"]["settingsTheme"], "auto")
+AssertEq("overview design default is default", defaultsAll["appearance"]["overview"]["design"], "default")
+AssertEq("overview cornerRadius default is 12", defaultsAll["appearance"]["overview"]["cornerRadius"], 12)
+AssertEq("overview bgColor default is #000000", defaultsAll["appearance"]["overview"]["backgroundColor"], "#000000")
+AssertEq("overview bgOpacity default is 50", defaultsAll["appearance"]["overview"]["backgroundOpacity"], 50)
+AssertEq("primaryModifiers default is NumLock", defaultsAll["hotkeys"]["primaryModifiers"]["default"], "NumLock")
 
 OsdRenderer.EnsureGdiPlus()
 pinLayout := OsdRenderer.ComputeLayout("__PINNED__", osdDef, 96)
@@ -455,8 +472,19 @@ OsdRenderer.Shutdown()
 settingsHtmlOsd := FileRead(A_ScriptDir "\..\web\settings.html", "UTF-8")
 for ctrlId in ["col_osd_bgColor", "app_osd_bgOpacity", "col_osd_textColor",
                "app_osd_borderTransparent", "col_osd_borderColor", "app_osd_borderWidth",
-               "osd-preview-strip"] {
+               "app_osd_cornerRadius", "osd-preview-strip", "app_settingsTheme",
+               "app_overview_design", "app_overview_cornerRadius",
+               "col_overview_bgColor", "app_overview_bgOpacity",
+               "app_animationsEnabled", "primary-modifier-controls"] {
     AssertTrue("settings expose OSD control " ctrlId, InStr(settingsHtmlOsd, 'id="' ctrlId '"') > 0)
+}
+
+overviewCssText := FileRead(A_ScriptDir "\..\web\css\overview.css", "UTF-8")
+AssertTrue("overview CSS defines --ov-radius", InStr(overviewCssText, "--ov-radius:") > 0)
+AssertTrue("overview CSS defines --ov-bg", InStr(overviewCssText, "--ov-bg:") > 0)
+AssertTrue("overview CSS disables hover lift when animations are off", InStr(overviewCssText, 'data-animations="off"') > 0)
+for designName in ["glass", "minimal", "compact", "high_contrast"] {
+    AssertTrue("overview CSS defines design " designName, InStr(overviewCssText, 'data-design="' designName '"') > 0)
 }
 
 ; ---------------------------------------------------------------- Languages

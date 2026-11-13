@@ -18,8 +18,16 @@ const DEFAULT_CONFIG = {
       "borderColor": "#3D3D3D",
       "borderTransparent": 0,
       "borderWidth": 1,
+      "cornerRadius": 10,
       "textColor": "#FFFFFF"
-    }
+    },
+    "overview": {
+      "backgroundColor": "#000000",
+      "backgroundOpacity": 50,
+      "cornerRadius": 12,
+      "design": "default"
+    },
+    "settingsTheme": "auto"
   },
   "configVersion": 2,
   "general": {
@@ -54,6 +62,9 @@ const DEFAULT_CONFIG = {
   },
   "hotkeys": {
     "activeProfile": "default",
+    "primaryModifiers": {
+      "default": "NumLock"
+    },
     "profiles": {
       "default": {
         "alt_tab": [

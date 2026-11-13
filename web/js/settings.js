@@ -16,20 +16,34 @@ function mixColor(hex, target, amount) {
     .join("");
 }
 
+let lastSystemTheme = { dark: false, accent: "#0078D7", os: "win11" };
+
 function applyTheme(info) {
+  if (info && typeof info === "object") {
+    lastSystemTheme = Object.assign({}, lastSystemTheme, info);
+  }
+  const src = lastSystemTheme;
   const root = document.documentElement;
-  const dark = !!info.dark;
-  const accent = /^#[0-9a-fA-F]{6}$/.test(info.accent || "") ? info.accent : "#0078D7";
+  const themePref = (typeof currentConfig === "object" && currentConfig)
+    ? (getPropertyByPath(currentConfig, "appearance.settingsTheme") || "auto")
+    : "auto";
+  const dark = themePref === "dark" ? true : (themePref === "light" ? false : !!src.dark);
+  const accent = /^#[0-9a-fA-F]{6}$/.test(src.accent || "") ? src.accent : "#0078D7";
   const rgb = hexToRgb(accent);
 
   root.setAttribute("data-theme", dark ? "dark" : "light");
-  root.setAttribute("data-os", info.os === "win11" ? "win11" : "win10");
+  root.setAttribute("data-os", src.os === "win11" ? "win11" : "win10");
   root.style.colorScheme = dark ? "dark" : "light";
   root.style.setProperty("--accent", accent);
   root.style.setProperty("--accent-hover", mixColor(accent, dark ? "#ffffff" : "#000000", dark ? 0.12 : 0.08));
   root.style.setProperty("--accent-pressed", mixColor(accent, dark ? "#ffffff" : "#000000", dark ? 0.22 : 0.18));
   root.style.setProperty("--accent-subtle", `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${dark ? 0.2 : 0.12})`);
   root.style.setProperty("--accent-faint", `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${dark ? 0.3 : 0.2})`);
+}
+
+function onSettingsThemeChange(val) {
+  updateSetting("appearance.settingsTheme", val);
+  applyTheme(lastSystemTheme);
 }
 
 // State Management
@@ -78,7 +92,7 @@ let currentLang = currentConfig.language || "en";
 let activeTabId = "tab-hotkeys";
 let currentSearchQuery = "";
 let recordingTarget = null; // { actionKey: string }
-let isNumLockHeld = false;  // Tracks NumLock state during recording
+let heldCustomModifier = ""; // Tracks NumLock or custom primary modifier during recording
 
 const HOTKEY_ACTIONS = [
   { key: "move_window_prefix", group: "sys", i18nTitle: "act_move_window_prefix", i18nDesc: "act_move_window_prefix_desc" },
@@ -286,6 +300,7 @@ function setLanguage(lang) {
   });
 
   updatePageTitle();
+  renderPrimaryModifierBar();
   renderHotkeysList();
   sendToAhk("SET_SETTING", { key: "language", value: lang });
 }
@@ -350,6 +365,36 @@ function syncFormValues() {
 
   document.getElementById("gen_tb_hideTaskList").checked = !!currentConfig.general.taskbar.hideTaskList;
 
+  const elSettingsTheme = document.getElementById("app_settingsTheme");
+  if (elSettingsTheme) {
+    const themeVal = getPropertyByPath(currentConfig, "appearance.settingsTheme");
+    elSettingsTheme.value = (themeVal === "light" || themeVal === "dark" || themeVal === "auto") ? themeVal : "auto";
+  }
+
+  const elOvDesign = document.getElementById("app_overview_design");
+  if (elOvDesign) {
+    const ovDesign = getPropertyByPath(currentConfig, "appearance.overview.design") || "default";
+    elOvDesign.value = ovDesign;
+  }
+  const elOvRadius = document.getElementById("app_overview_cornerRadius");
+  if (elOvRadius) {
+    const ovRad = getPropertyByPath(currentConfig, "appearance.overview.cornerRadius");
+    elOvRadius.value = (ovRad !== undefined) ? ovRad : 12;
+  }
+  syncColorControl("appearance.overview.backgroundColor", "col_overview_bgColor", "text_overview_bgColor", "box_overview_bgColor");
+  const elOvBgOpacity = document.getElementById("app_overview_bgOpacity");
+  if (elOvBgOpacity) {
+    const ovOp = getPropertyByPath(currentConfig, "appearance.overview.backgroundOpacity");
+    elOvBgOpacity.value = (ovOp !== undefined) ? ovOp : 50;
+  }
+
+  const elAnimEnabled = document.getElementById("app_animationsEnabled");
+  if (elAnimEnabled) {
+    const enabled = getPropertyByPath(currentConfig, "appearance.animationsEnabled");
+    elAnimEnabled.checked = (enabled === undefined) ? true : !!enabled;
+  }
+  updateAnimationDurationControlState();
+
   document.getElementById("app_animationDurationMs").value = currentConfig.appearance.animationDurationMs;
 
   syncColorControl("appearance.colors.workspaceBorderHover", "col_workspaceBorderHover", "text_col_wsBorder", "box_col_wsBorder");
@@ -375,12 +420,40 @@ function syncFormValues() {
     const bw = getPropertyByPath(currentConfig, "appearance.osd.borderWidth");
     elOsdBorderWidth.value = (bw !== undefined) ? bw : 1;
   }
+  const elOsdCornerRadius = document.getElementById("app_osd_cornerRadius");
+  if (elOsdCornerRadius) {
+    const cr = getPropertyByPath(currentConfig, "appearance.osd.cornerRadius");
+    elOsdCornerRadius.value = (cr !== undefined) ? cr : 10;
+  }
   updateOsdBorderControlsState();
   updateOsdPreview();
 
   syncProfileSelect();
+  renderPrimaryModifierBar();
   renderHotkeysList();
   updateResetButtonsStatus();
+}
+
+function onAnimationsEnabledChange(checked) {
+  updateSetting("appearance.animationsEnabled", checked ? 1 : 0);
+  updateAnimationDurationControlState();
+}
+
+function updateAnimationDurationControlState() {
+  const raw = getPropertyByPath(currentConfig, "appearance.animationsEnabled");
+  const enabled = (raw === undefined) ? true : !!raw;
+  const rowDur = document.getElementById("row_animationDurationMs");
+  if (rowDur) rowDur.classList.toggle("is-disabled", !enabled);
+}
+
+function onClampedNumberChange(configPath, rawVal, minVal, maxVal, fallback) {
+  let num = parseInt(rawVal, 10);
+  if (isNaN(num)) num = fallback;
+  num = Math.min(maxVal, Math.max(minVal, num));
+  setPropertyByPath(currentConfig, configPath, num);
+  saveConfigToStorage();
+  syncFormValues();
+  sendToAhk("SET_SETTING", { key: configPath, value: num });
 }
 
 function onOsdColorLive(configPath, hex) {
@@ -431,6 +504,8 @@ function updateOsdPreview() {
   const borderHex = getPropertyByPath(currentConfig, "appearance.osd.borderColor") || "#3D3D3D";
   const borderWidthRaw = getPropertyByPath(currentConfig, "appearance.osd.borderWidth");
   const borderWidth = Math.min(10, Math.max(1, borderWidthRaw !== undefined ? Number(borderWidthRaw) : 1));
+  const cornerRadiusRaw = getPropertyByPath(currentConfig, "appearance.osd.cornerRadius");
+  const cornerRadius = Math.min(32, Math.max(0, cornerRadiusRaw !== undefined ? Number(cornerRadiusRaw) : 10));
 
   const rgb = /^#[0-9a-fA-F]{6}$/.test(bgHex) ? hexToRgb(bgHex) : { r: 26, g: 26, b: 26 };
   const bgCss = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${(bgOpacity / 100).toFixed(2)})`;
@@ -438,6 +513,7 @@ function updateOsdPreview() {
   strip.querySelectorAll(".osd-preview-pill").forEach(pill => {
     pill.style.backgroundColor = bgCss;
     pill.style.color = textHex;
+    pill.style.borderRadius = `${cornerRadius}px`;
     pill.style.borderStyle = "solid";
     if (borderTransparent) {
       pill.style.borderWidth = "0px";
@@ -513,6 +589,9 @@ function resetField(path) {
   }
   saveConfigToStorage();
   syncFormValues();
+  if (path === "appearance.settingsTheme") {
+    applyTheme(lastSystemTheme);
+  }
   sendToAhk("SET_SETTING", { key: path, value: defVal });
 }
 
@@ -527,15 +606,22 @@ function resetActiveTab() {
   } else if (activeTabId === "tab-appearance") {
     currentConfig.appearance = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG.appearance));
     saveConfigToStorage();
+    applyTheme(lastSystemTheme);
     syncFormValues();
     sendToAhk("SET_SETTING", { key: "appearance", value: currentConfig.appearance });
   } else if (activeTabId === "tab-hotkeys") {
     const activeProf = currentConfig.hotkeys.activeProfile || "default";
     const defProf = window.DEFAULT_CONFIG.hotkeys.profiles["default"];
     currentConfig.hotkeys.profiles[activeProf] = JSON.parse(JSON.stringify(defProf));
+    setPrimaryModifierValue(activeProf, "NumLock");
     saveConfigToStorage();
+    renderPrimaryModifierBar();
     renderHotkeysList();
-    sendToAhk("SET_SETTING", { key: `hotkeys.profiles.${activeProf}`, value: currentConfig.hotkeys.profiles[activeProf] });
+    sendToAhk("APPLY_PRIMARY_MODIFIER", {
+      profile: activeProf,
+      primaryModifier: "NumLock",
+      binds: currentConfig.hotkeys.profiles[activeProf]
+    });
   }
 }
 
@@ -580,9 +666,154 @@ function syncProfileSelect() {
   });
 }
 
+function getPrimaryModifier(profName) {
+  const active = profName || getActiveProfileName();
+  const map = currentConfig.hotkeys && currentConfig.hotkeys.primaryModifiers;
+  return (map && map[active]) ? map[active] : "NumLock";
+}
+
+function setPrimaryModifierValue(profName, mod) {
+  if (!currentConfig.hotkeys.primaryModifiers || typeof currentConfig.hotkeys.primaryModifiers !== "object") {
+    currentConfig.hotkeys.primaryModifiers = {};
+  }
+  currentConfig.hotkeys.primaryModifiers[profName] = mod;
+}
+
+function normalizeModToken(token) {
+  const low = (token || "").trim().toLowerCase();
+  if (low === "control") return "ctrl";
+  if (low === "windows") return "win";
+  return low;
+}
+
+function replacePrimaryModifierInCombo(combo, oldMod, newMod, isPrefixAction) {
+  if (typeof combo !== "string" || !combo.trim()) return combo;
+  const parts = combo.split("+").map(p => p.trim()).filter(Boolean);
+  if (!parts.length) return combo;
+
+  const oldNorm = normalizeModToken(oldMod);
+  const newNorm = normalizeModToken(newMod);
+
+  if (isPrefixAction) {
+    let found = false;
+    const replaced = [];
+    for (const p of parts) {
+      if (normalizeModToken(p) === oldNorm) {
+        found = true;
+        if (!replaced.some(r => normalizeModToken(r) === newNorm)) {
+          replaced.push(newMod);
+        }
+      } else {
+        if (!replaced.some(r => normalizeModToken(r) === normalizeModToken(p))) {
+          replaced.push(p);
+        }
+      }
+    }
+    return found ? replaced.join(" + ") : combo;
+  }
+
+  if (parts.length < 2) return combo;
+  const mods = parts.slice(0, -1);
+  const key = parts[parts.length - 1];
+  let found = false;
+  const newMods = [];
+
+  for (const m of mods) {
+    if (normalizeModToken(m) === oldNorm) {
+      found = true;
+      if (!newMods.some(r => normalizeModToken(r) === newNorm)) {
+        newMods.push(newMod);
+      }
+    } else {
+      if (!newMods.some(r => normalizeModToken(r) === normalizeModToken(m))) {
+        newMods.push(m);
+      }
+    }
+  }
+
+  if (!found) return combo;
+  if (normalizeModToken(key) === newNorm) return combo;
+  return [...newMods, key].join(" + ");
+}
+
+function applyPrimaryModifier(newMod) {
+  const cleanMod = (newMod || "").trim();
+  if (!cleanMod) return;
+  const activeProf = getActiveProfileName();
+  const oldMod = getPrimaryModifier(activeProf);
+  const binds = getActiveProfileBinds();
+
+  if (normalizeModToken(cleanMod) !== normalizeModToken(oldMod)) {
+    for (const actionKey in binds) {
+      const list = binds[actionKey];
+      if (!Array.isArray(list)) continue;
+      const isPrefix = (actionKey === "window_mouse_modifier" || actionKey === "move_window_prefix");
+      const updated = [];
+      for (const combo of list) {
+        const nextCombo = replacePrimaryModifierInCombo(combo, oldMod, cleanMod, isPrefix);
+        if (!updated.includes(nextCombo)) {
+          updated.push(nextCombo);
+        }
+      }
+      binds[actionKey] = updated;
+    }
+  }
+
+  setPrimaryModifierValue(activeProf, cleanMod);
+  recordingTarget = null;
+  heldCustomModifier = "";
+  saveConfigToStorage();
+  renderPrimaryModifierBar();
+  renderHotkeysList();
+  sendToAhk("APPLY_PRIMARY_MODIFIER", {
+    profile: activeProf,
+    primaryModifier: cleanMod,
+    binds: binds
+  });
+  sendToAhk("STOP_KEY_RECORDING", {});
+}
+
+function startPrimaryModifierRecording() {
+  heldCustomModifier = "";
+  recordingTarget = { actionKey: "__PRIMARY_MODIFIER__" };
+  renderPrimaryModifierBar();
+  renderHotkeysList();
+  sendToAhk("START_KEY_RECORDING", {});
+}
+
+function resetPrimaryModifier() {
+  applyPrimaryModifier("NumLock");
+}
+
+function renderPrimaryModifierBar() {
+  const container = document.getElementById("primary-modifier-controls");
+  if (!container) return;
+
+  const currentMod = getPrimaryModifier();
+  const isRecording = recordingTarget && recordingTarget.actionKey === "__PRIMARY_MODIFIER__";
+  const isModified = normalizeModToken(currentMod) !== "numlock";
+
+  if (isRecording) {
+    container.innerHTML = `<div class="recording-chip">
+      <span>${escapeHtml(t("pressKeyPrompt"))}</span>
+      <span class="recording-cancel" onclick="cancelRecording()">${escapeHtml(t("cancelKeyRecord"))}</span>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <span class="primary-modifier-chip">${escapeHtml(currentMod)}</span>
+    <button class="btn-add-bind" onclick="startPrimaryModifierRecording()">${escapeHtml(t("changePrimaryModBtn"))}</button>
+    <button class="btn-reset ${isModified ? "is-modified" : ""}" onclick="resetPrimaryModifier()" title="${escapeHtml(t("resetFieldTooltip"))}">
+      <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+    </button>
+  `;
+}
+
 function onProfileChange(profName) {
   currentConfig.hotkeys.activeProfile = profName;
   saveConfigToStorage();
+  renderPrimaryModifierBar();
   renderHotkeysList();
   sendToAhk("SWITCH_KEYBIND_PROFILE", { profile: profName });
 }
@@ -598,11 +829,13 @@ function addNewProfile() {
   const defBinds = window.DEFAULT_CONFIG.hotkeys.profiles["default"] || {};
   const initialBinds = JSON.parse(JSON.stringify(defBinds));
   currentConfig.hotkeys.profiles[cleanName] = initialBinds;
+  setPrimaryModifierValue(cleanName, "NumLock");
   currentConfig.hotkeys.activeProfile = cleanName;
   saveConfigToStorage();
   syncProfileSelect();
+  renderPrimaryModifierBar();
   renderHotkeysList();
-  sendToAhk("SAVE_KEYBIND_PROFILE", { profile: cleanName, binds: initialBinds });
+  sendToAhk("SAVE_KEYBIND_PROFILE", { profile: cleanName, binds: initialBinds, primaryModifier: "NumLock" });
 }
 
 function renameProfile() {
@@ -619,11 +852,17 @@ function renameProfile() {
     return;
   }
   const binds = currentConfig.hotkeys.profiles[active];
+  const pm = getPrimaryModifier(active);
   delete currentConfig.hotkeys.profiles[active];
+  if (currentConfig.hotkeys.primaryModifiers) {
+    delete currentConfig.hotkeys.primaryModifiers[active];
+  }
   currentConfig.hotkeys.profiles[clean] = binds;
+  setPrimaryModifierValue(clean, pm);
   currentConfig.hotkeys.activeProfile = clean;
   saveConfigToStorage();
   syncProfileSelect();
+  renderPrimaryModifierBar();
   renderHotkeysList();
   sendToAhk("RENAME_KEYBIND_PROFILE", { oldName: active, newName: clean });
 }
@@ -639,12 +878,15 @@ function duplicateProfile() {
     return;
   }
   const bindsCopy = JSON.parse(JSON.stringify(currentConfig.hotkeys.profiles[active] || {}));
+  const pm = getPrimaryModifier(active);
   currentConfig.hotkeys.profiles[clean] = bindsCopy;
+  setPrimaryModifierValue(clean, pm);
   currentConfig.hotkeys.activeProfile = clean;
   saveConfigToStorage();
   syncProfileSelect();
+  renderPrimaryModifierBar();
   renderHotkeysList();
-  sendToAhk("SAVE_KEYBIND_PROFILE", { profile: clean, binds: bindsCopy });
+  sendToAhk("SAVE_KEYBIND_PROFILE", { profile: clean, binds: bindsCopy, primaryModifier: pm });
 }
 
 function deleteProfile() {
@@ -655,9 +897,13 @@ function deleteProfile() {
   }
   if (!confirm(t("confirmDeleteProfile", { name: active }))) return;
   delete currentConfig.hotkeys.profiles[active];
+  if (currentConfig.hotkeys.primaryModifiers) {
+    delete currentConfig.hotkeys.primaryModifiers[active];
+  }
   currentConfig.hotkeys.activeProfile = "default";
   saveConfigToStorage();
   syncProfileSelect();
+  renderPrimaryModifierBar();
   renderHotkeysList();
   sendToAhk("DELETE_KEYBIND_PROFILE", { profile: active });
 }
@@ -834,15 +1080,17 @@ function resetKeybindAction(actionKey) {
 }
 
 function startRecording(actionKey) {
-  isNumLockHeld = false;
+  heldCustomModifier = "";
   recordingTarget = { actionKey: actionKey };
+  renderPrimaryModifierBar();
   renderHotkeysList();
   sendToAhk("START_KEY_RECORDING", {});
 }
 
 function cancelRecording() {
-  isNumLockHeld = false;
+  heldCustomModifier = "";
   recordingTarget = null;
+  renderPrimaryModifierBar();
   renderHotkeysList();
   sendToAhk("STOP_KEY_RECORDING", {});
 }
@@ -858,16 +1106,61 @@ function commitRecordedKey(shortcutString) {
   }
 
   recordingTarget = null;
-  isNumLockHeld = false;
+  heldCustomModifier = "";
   saveConfigToStorage();
   renderHotkeysList();
   sendToAhk("SET_SETTING", { key: `hotkeys.profiles.${getActiveProfileName()}.${actionKey}`, value: binds[actionKey] });
   sendToAhk("STOP_KEY_RECORDING", {});
 }
 
+function normalizeWebKeyToAhk(e) {
+  if (e.key === "NumLock" || e.code === "NumLock") return "NumLock";
+  if (e.key === "CapsLock" || e.code === "CapsLock") return "CapsLock";
+  if (e.key === "ScrollLock" || e.code === "ScrollLock") return "ScrollLock";
+  if (e.key === "Control" || e.key === "Ctrl") return "Ctrl";
+  if (e.key === "Alt") return "Alt";
+  if (e.key === "Shift") return "Shift";
+  if (e.key === "Meta") return "Win";
+
+  const codeMap = {
+    ArrowLeft: "Left",
+    ArrowRight: "Right",
+    ArrowUp: "Up",
+    ArrowDown: "Down",
+    Space: "Space",
+    Tab: "Tab",
+    Enter: "Enter",
+    Escape: "Escape",
+    Backspace: "Backspace",
+    Delete: "Delete",
+    Insert: "Insert",
+    Home: "Home",
+    End: "End",
+    PageUp: "PageUp",
+    PageDown: "PageDown",
+    Pause: "Pause"
+  };
+
+  const code = e.code || e.key || "";
+  if (codeMap[code]) return codeMap[code];
+  if (code.startsWith("Key")) return code.substring(3);
+  if (code.startsWith("Digit")) return code.substring(5);
+  if (code.startsWith("Numpad")) {
+    const numSub = code.substring(6);
+    if (numSub.length > 0 && !isNaN(numSub)) return numSub;
+  }
+  return code;
+}
+
+function isStandardModifierKey(keyName) {
+  return ["Ctrl", "Alt", "Shift", "Win"].includes(keyName);
+}
+
 window.addEventListener("keyup", (e) => {
-  if (e.key === "NumLock" || e.code === "NumLock") {
-    isNumLockHeld = false;
+  if (!heldCustomModifier) return;
+  const released = normalizeWebKeyToAhk(e);
+  if (normalizeModToken(released) === normalizeModToken(heldCustomModifier)) {
+    heldCustomModifier = "";
   }
 });
 
@@ -881,7 +1174,7 @@ window.addEventListener("mousedown", (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  if (recordingTarget.actionKey === "window_mouse_modifier") {
+  if (recordingTarget.actionKey === "__PRIMARY_MODIFIER__" || recordingTarget.actionKey === "window_mouse_modifier") {
     return;
   }
 
@@ -895,7 +1188,7 @@ window.addEventListener("mousedown", (e) => {
   if (!btnName) return;
 
   const parts = [];
-  if (isNumLockHeld) parts.push("NumLock");
+  if (heldCustomModifier) parts.push(heldCustomModifier);
   if (e.ctrlKey) parts.push("Ctrl");
   if (e.altKey) parts.push("Alt");
   if (e.shiftKey) parts.push("Shift");
@@ -911,13 +1204,13 @@ window.addEventListener("wheel", (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  if (recordingTarget.actionKey === "window_mouse_modifier") {
+  if (recordingTarget.actionKey === "__PRIMARY_MODIFIER__" || recordingTarget.actionKey === "window_mouse_modifier") {
     return;
   }
 
   const wheelName = e.deltaY < 0 ? "WheelUp" : "WheelDown";
   const parts = [];
-  if (isNumLockHeld) parts.push("NumLock");
+  if (heldCustomModifier) parts.push(heldCustomModifier);
   if (e.ctrlKey) parts.push("Ctrl");
   if (e.altKey) parts.push("Alt");
   if (e.shiftKey) parts.push("Shift");
@@ -933,60 +1226,56 @@ window.addEventListener("keydown", (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  if (e.key === "Escape" && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey && !isNumLockHeld) {
+  const keyName = normalizeWebKeyToAhk(e);
+
+  if (keyName === "Escape" && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey && !heldCustomModifier) {
     cancelRecording();
     return;
   }
 
-  if (recordingTarget.actionKey === "window_mouse_modifier") {
-    let modName = "";
-    if (e.key === "NumLock" || e.code === "NumLock") modName = "NumLock";
-    else if (e.key === "Control" || e.key === "Ctrl") modName = "Ctrl";
-    else if (e.key === "Alt") modName = "Alt";
-    else if (e.key === "Shift") modName = "Shift";
-    else if (e.key === "Meta") modName = "Win";
+  if (recordingTarget.actionKey === "__PRIMARY_MODIFIER__") {
+    if (keyName) {
+      applyPrimaryModifier(keyName);
+    }
+    return;
+  }
 
-    if (modName) {
+  if (recordingTarget.actionKey === "window_mouse_modifier") {
+    if (keyName === "NumLock" || isStandardModifierKey(keyName) || normalizeModToken(keyName) === normalizeModToken(getPrimaryModifier())) {
       const parts = [];
-      if (isNumLockHeld && modName !== "NumLock") parts.push("NumLock");
-      if (e.ctrlKey && modName !== "Ctrl") parts.push("Ctrl");
-      if (e.altKey && modName !== "Alt") parts.push("Alt");
-      if (e.shiftKey && modName !== "Shift") parts.push("Shift");
-      if (e.metaKey && modName !== "Win") parts.push("Win");
-      parts.push(modName);
+      if (heldCustomModifier && normalizeModToken(heldCustomModifier) !== normalizeModToken(keyName)) parts.push(heldCustomModifier);
+      if (e.ctrlKey && keyName !== "Ctrl") parts.push("Ctrl");
+      if (e.altKey && keyName !== "Alt") parts.push("Alt");
+      if (e.shiftKey && keyName !== "Shift") parts.push("Shift");
+      if (e.metaKey && keyName !== "Win") parts.push("Win");
+      parts.push(keyName);
       commitRecordedKey(parts.join(" + "));
       return;
     }
   }
 
-  if (e.key === "NumLock" || e.code === "NumLock") {
-    isNumLockHeld = true;
+  const activePrimary = getPrimaryModifier();
+  const isCustomPrefixKey =
+    keyName === "NumLock" ||
+    (!isStandardModifierKey(activePrimary) && normalizeModToken(keyName) === normalizeModToken(activePrimary));
+
+  if (isCustomPrefixKey && !heldCustomModifier) {
+    heldCustomModifier = keyName;
     return;
   }
 
-  if (["Control", "Alt", "Shift", "Meta"].includes(e.key)) {
+  if (isStandardModifierKey(keyName)) {
     return;
   }
 
   const parts = [];
-  if (isNumLockHeld) parts.push("NumLock");
+  if (heldCustomModifier && normalizeModToken(heldCustomModifier) !== normalizeModToken(keyName)) {
+    parts.push(heldCustomModifier);
+  }
   if (e.ctrlKey) parts.push("Ctrl");
   if (e.altKey) parts.push("Alt");
   if (e.shiftKey) parts.push("Shift");
   if (e.metaKey) parts.push("Win");
-
-  let keyName = e.code || e.key;
-  if (keyName.startsWith("Key")) keyName = keyName.substring(3);
-  else if (keyName.startsWith("Digit")) keyName = keyName.substring(5);
-  else if (keyName.startsWith("Numpad")) {
-    const numSub = keyName.substring(6);
-    if (numSub.length > 0 && !isNaN(numSub)) {
-      keyName = numSub;
-    }
-  }
-  else if (keyName === "Space") keyName = "Space";
-  else if (keyName === "Tab") keyName = "Tab";
-  else if (keyName === "Enter") keyName = "Enter";
 
   parts.push(keyName);
   commitRecordedKey(parts.join(" + "));
@@ -1024,6 +1313,7 @@ if (window.chrome && window.chrome.webview) {
         currentLang = currentConfig.language;
       }
       saveConfigToStorage();
+      applyTheme(lastSystemTheme);
       setLanguage(currentLang);
       syncFormValues();
     }

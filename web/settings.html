@@ -85,6 +85,16 @@
               </div>
             </div>
 
+            <div class="primary-modifier-bar">
+              <div class="setting-info">
+                <div class="setting-title" data-i18n="primaryModifierTitle">Главный модификатор</div>
+                <div class="setting-desc" data-i18n="primaryModifierDesc">Быстро заменяет главный модификатор во всех привязках профиля. Бинды с другими модификаторами сохраняются.</div>
+              </div>
+              <div class="setting-control-group" id="primary-modifier-controls">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+
             <div class="search-box">
               <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
               <input type="text" id="hotkey-search" class="search-input" placeholder="Поиск команды или клавиши..." data-i18n-ph="searchPlaceholder" oninput="filterHotkeys(this.value)">
@@ -328,17 +338,125 @@
 
         <!-- ================= TAB 3: APPEARANCE & COLORS ================= -->
         <section id="tab-appearance" class="tab-panel">
+          <!-- Settings Theme -->
+          <div class="settings-group">
+            <div class="group-title" data-i18n="groupSettingsTheme">Тема окна настроек</div>
+            <div class="group-cards">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="settingsTheme">Тема интерфейса</div>
+                  <div class="setting-desc" data-i18n="settingsTheme_desc">Выберите светлую, темную или автоматическую системную тему</div>
+                </div>
+                <div class="setting-control-group">
+                  <select id="app_settingsTheme" class="select-custom" onchange="onSettingsThemeChange(this.value)">
+                    <option value="auto" data-i18n="theme_auto">Авто (как в Windows)</option>
+                    <option value="light" data-i18n="theme_light">Светлая</option>
+                    <option value="dark" data-i18n="theme_dark">Темная</option>
+                  </select>
+                  <button class="btn-reset" onclick="resetField('appearance.settingsTheme')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Overview Design -->
+          <div class="settings-group">
+            <div class="group-title" data-i18n="groupOverviewDesign">Дизайн обзора (Overview)</div>
+            <div class="group-cards">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="overviewDesign">Стиль оформления Overview</div>
+                  <div class="setting-desc" data-i18n="overviewDesign_desc">Выберите визуальный стиль экрана обзора рабочих столов</div>
+                </div>
+                <div class="setting-control-group">
+                  <select id="app_overview_design" class="select-custom" onchange="updateSetting('appearance.overview.design', this.value)">
+                    <option value="default" data-i18n="overviewDesign_default">Классический (по умолчанию)</option>
+                    <option value="glass" data-i18n="overviewDesign_glass">Матовое стекло</option>
+                    <option value="minimal" data-i18n="overviewDesign_minimal">Минимализм</option>
+                    <option value="compact" data-i18n="overviewDesign_compact">Компактный</option>
+                    <option value="high_contrast" data-i18n="overviewDesign_high_contrast">Контрастный</option>
+                  </select>
+                  <button class="btn-reset" onclick="resetField('appearance.overview.design')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="overviewCornerRadius">Скругление углов в Overview (px)</div>
+                  <div class="setting-desc" data-i18n="overviewCornerRadius_desc">Радиус скругления карточек и элементов в окне обзора (0 — без скругления)</div>
+                </div>
+                <div class="setting-control-group">
+                  <input type="number" id="app_overview_cornerRadius" class="input-number" min="0" max="32" step="1" onchange="onClampedNumberChange('appearance.overview.cornerRadius', this.value, 0, 32, 12)">
+                  <button class="btn-reset" onclick="resetField('appearance.overview.cornerRadius')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="overviewBgColor">Цвет фона Overview</div>
+                  <div class="setting-desc" data-i18n="overviewBgColor_desc">Цвет подложки экрана обзора рабочих столов</div>
+                </div>
+                <div class="setting-control-group">
+                  <div class="color-control">
+                    <div class="color-preview-box" id="box_overview_bgColor">
+                      <input type="color" id="col_overview_bgColor" onchange="onColorInput('appearance.overview.backgroundColor', this.value)">
+                    </div>
+                    <input type="text" id="text_overview_bgColor" class="color-hex-text" maxlength="7" onchange="onHexTextInput('appearance.overview.backgroundColor', this.value)">
+                  </div>
+                  <button class="btn-reset" onclick="resetField('appearance.overview.backgroundColor')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="overviewBgOpacity">Непрозрачность фона Overview (%)</div>
+                  <div class="setting-desc" data-i18n="overviewBgOpacity_desc">От 0% (полностью прозрачный) до 100% (сплошной цвет)</div>
+                </div>
+                <div class="setting-control-group">
+                  <input type="number" id="app_overview_bgOpacity" class="input-number" min="0" max="100" step="5" onchange="onClampedNumberChange('appearance.overview.backgroundOpacity', this.value, 0, 100, 50)">
+                  <button class="btn-reset" onclick="resetField('appearance.overview.backgroundOpacity')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Animations -->
           <div class="settings-group">
             <div class="group-title" data-i18n="groupAnimations">Анимации</div>
             <div class="group-cards">
               <div class="setting-row">
                 <div class="setting-info">
+                  <div class="setting-title" data-i18n="animationsEnabled">Включить анимации в овервью</div>
+                  <div class="setting-desc" data-i18n="animationsEnabled_desc">Анимации карточек и рабочих столов в овервью</div>
+                </div>
+                <div class="setting-control-group">
+                  <label class="switch">
+                    <input type="checkbox" id="app_animationsEnabled" onchange="onAnimationsEnabledChange(this.checked)">
+                    <span class="slider"></span>
+                  </label>
+                  <button class="btn-reset" onclick="resetField('appearance.animationsEnabled')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row" id="row_animationDurationMs">
+                <div class="setting-info">
                   <div class="setting-title" data-i18n="animationDuration">Скорость анимации</div>
                   <div class="setting-desc" data-i18n="animationDuration_desc">Длительность перехода в миллисекундах</div>
                 </div>
                 <div class="setting-control-group">
-                  <input type="number" id="app_animationDurationMs" class="input-number" min="50" max="1000" step="50" onchange="updateSetting('appearance.animationDurationMs', parseInt(this.value, 10))">
+                  <input type="number" id="app_animationDurationMs" class="input-number" min="0" max="1000" step="50" onchange="onClampedNumberChange('appearance.animationDurationMs', this.value, 0, 1000, 200)">
                   <button class="btn-reset" onclick="resetField('appearance.animationDurationMs')" title="Сбросить" data-i18n-title="resetFieldTooltip">
                     <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
                   </button>
@@ -569,6 +687,19 @@
                 <div class="setting-control-group">
                   <input type="number" id="app_osd_borderWidth" class="input-number" min="1" max="10" step="1" onchange="onOsdNumberChange('appearance.osd.borderWidth', this.value, 1, 10, 1)">
                   <button class="btn-reset" onclick="resetField('appearance.osd.borderWidth')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="osdCornerRadius">Скругление углов (px)</div>
+                  <div class="setting-desc" data-i18n="osdCornerRadius_desc">Радиус скругления углов плашки уведомления (0 — прямые углы)</div>
+                </div>
+                <div class="setting-control-group">
+                  <input type="number" id="app_osd_cornerRadius" class="input-number" min="0" max="32" step="1" onchange="onOsdNumberChange('appearance.osd.cornerRadius', this.value, 0, 32, 10)">
+                  <button class="btn-reset" onclick="resetField('appearance.osd.cornerRadius')" title="Сбросить" data-i18n-title="resetFieldTooltip">
                     <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
                   </button>
                 </div>

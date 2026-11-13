@@ -218,7 +218,35 @@ const I18N = {
     osdBorderColor: "Цвет обводки",
     osdBorderColor_desc: "Цвет рамки вокруг плашки уведомления",
     osdBorderWidth: "Толщина обводки (px)",
-    osdBorderWidth_desc: "Толщина линии рамки вокруг плашки уведомления"
+    osdBorderWidth_desc: "Толщина линии рамки вокруг плашки уведомления",
+    osdCornerRadius: "Скругление углов (px)",
+    osdCornerRadius_desc: "Радиус скругления углов плашки уведомления (0 — прямые углы)",
+
+    primaryModifierTitle: "Главный модификатор",
+    primaryModifierDesc: "Быстро заменяет главный модификатор во всех привязках профиля. Бинды с другими модификаторами сохраняются.",
+    changePrimaryModBtn: "Изменить",
+
+    groupSettingsTheme: "Тема окна настроек",
+    settingsTheme: "Тема интерфейса",
+    settingsTheme_desc: "Выберите светлую, темную или автоматическую системную тему",
+    theme_auto: "Авто (как в Windows)",
+    theme_light: "Светлая",
+    theme_dark: "Темная",
+
+    groupOverviewDesign: "Дизайн обзора (Overview)",
+    overviewDesign: "Стиль оформления Overview",
+    overviewDesign_desc: "Выберите визуальный стиль экрана обзора рабочих столов",
+    overviewDesign_default: "Классический (по умолчанию)",
+    overviewDesign_glass: "Матовое стекло",
+    overviewDesign_minimal: "Минимализм",
+    overviewDesign_compact: "Компактный",
+    overviewDesign_high_contrast: "Контрастный",
+    overviewCornerRadius: "Скругление углов в Overview (px)",
+    overviewCornerRadius_desc: "Радиус скругления карточек и элементов в окне обзора (0 — без скругления)",
+    overviewBgColor: "Цвет фона Overview",
+    overviewBgColor_desc: "Цвет подложки экрана обзора рабочих столов",
+    overviewBgOpacity: "Непрозрачность фона Overview (%)",
+    overviewBgOpacity_desc: "От 0% (полностью прозрачный) до 100% (сплошной цвет)"
   },
 
   en: {
@@ -440,7 +468,35 @@ const I18N = {
     osdBorderColor: "Border Color",
     osdBorderColor_desc: "Outline color around the notification badge",
     osdBorderWidth: "Border Thickness (px)",
-    osdBorderWidth_desc: "Width of the outline around the notification badge"
+    osdBorderWidth_desc: "Width of the outline around the notification badge",
+    osdCornerRadius: "Corner Radius (px)",
+    osdCornerRadius_desc: "Corner roundness of the notification badge (0 for sharp corners)",
+
+    primaryModifierTitle: "Primary Modifier",
+    primaryModifierDesc: "Quickly replaces the primary modifier across profile bindings while keeping custom shortcuts.",
+    changePrimaryModBtn: "Change",
+
+    groupSettingsTheme: "Settings Window Theme",
+    settingsTheme: "Interface Theme",
+    settingsTheme_desc: "Choose light, dark, or automatic system theme",
+    theme_auto: "Auto (Follow Windows)",
+    theme_light: "Light",
+    theme_dark: "Dark",
+
+    groupOverviewDesign: "Overview Design",
+    overviewDesign: "Overview Visual Style",
+    overviewDesign_desc: "Choose the visual design of the workspace overview screen",
+    overviewDesign_default: "Classic (Default)",
+    overviewDesign_glass: "Frosted Glass",
+    overviewDesign_minimal: "Minimalist",
+    overviewDesign_compact: "Compact",
+    overviewDesign_high_contrast: "High Contrast",
+    overviewCornerRadius: "Overview Corner Radius (px)",
+    overviewCornerRadius_desc: "Corner roundness for cards and tiles in Overview (0 for sharp corners)",
+    overviewBgColor: "Overview Background Color",
+    overviewBgColor_desc: "Backdrop tint color behind the workspace overview",
+    overviewBgOpacity: "Overview Background Opacity (%)",
+    overviewBgOpacity_desc: "From 0% (fully transparent) to 100% (solid color)"
   }
 };
 

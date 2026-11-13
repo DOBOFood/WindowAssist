@@ -189,6 +189,7 @@ class OsdRenderer {
         borderTransparent := !!ConfigManager.Get("appearance.osd.borderTransparent", false)
         borderColor := this.NormalizeHex(ConfigManager.Get("appearance.osd.borderColor", "#3D3D3D"), "#3D3D3D")
         borderWidth := this.ClampInt(ConfigManager.Get("appearance.osd.borderWidth", 1), 1, 10, 1)
+        cornerRadius := this.ClampInt(ConfigManager.Get("appearance.osd.cornerRadius", 10), 0, 32, 10)
 
         return {
             fontSize: fontSize,
@@ -198,7 +199,8 @@ class OsdRenderer {
             textColor: textColor,
             borderTransparent: borderTransparent,
             borderColor: borderColor,
-            borderWidth: borderWidth
+            borderWidth: borderWidth,
+            cornerRadius: cornerRadius
         }
     }
 
@@ -345,7 +347,8 @@ class OsdRenderer {
         inset := (bw > 0) ? (bw / 2.0) : 0.5
         rw := Max(1.0, w - inset * 2.0)
         rh := Max(1.0, h - inset * 2.0)
-        radius := Max(1.0, Min(10.0 * scale, Min(w, h) * 0.35) - inset)
+        outerR := Min(style.cornerRadius * scale, Min(w, h) / 2.0)
+        radius := (style.cornerRadius <= 0) ? 0.0 : Max(0.0, outerR - inset)
 
         pPath := this.CreateRoundedRectPath(inset, inset, rw, rh, radius)
         if (pPath) {

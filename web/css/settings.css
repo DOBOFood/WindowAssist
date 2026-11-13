@@ -695,6 +695,29 @@ html[data-os="win10"] .keybind-row:hover {
   gap: 6px;
 }
 
+.primary-modifier-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--divider);
+  border-bottom: 1px solid var(--divider);
+}
+
+.primary-modifier-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  background-color: var(--bg-chip);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
 .search-box {
   display: flex;
   align-items: center;
