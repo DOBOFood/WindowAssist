@@ -1,206 +1,131 @@
 <div align="center">
   <img src="assets/icon.svg" alt="WindowAssist" width="96" height="96" />
   <h1>WindowAssist</h1>
-  <p><strong>Fast virtual desktops, full-screen overview, quick-access window shelf, and effortless mouse controls for Windows</strong></p>
+  <p><strong>Windows multitasking that actually feels fast — per-monitor desktops, a drag-and-drop overview, a floating scratchpad, and AltSnap mouse controls.</strong></p>
 
   <p>
-    <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D7?style=flat-square&logo=windows" alt="Platform" />
+    <a href="https://github.com/DOBOFood/WindowAssist/releases/latest"><img src="https://img.shields.io/github/v/release/DOBOFood/WindowAssist?include_prereleases&style=flat-square&label=Release&color=0078D7" alt="Latest Release" /></a>
+    <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-0078D7?style=flat-square&logo=windows" alt="Platform" />
     <img src="https://img.shields.io/badge/AutoHotkey-v2.0+-334455?style=flat-square" alt="AutoHotkey v2" />
-    <img src="https://img.shields.io/badge/UI-WebView2-28A745?style=flat-square" alt="WebView2" />
-    <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" />
+    <img src="https://img.shields.io/badge/UI-WebView2%20%2B%20DWM-28A745?style=flat-square" alt="WebView2" />
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" /></a>
+  </p>
+
+  <p>
+    <a href="https://github.com/DOBOFood/WindowAssist/releases/latest"><strong>⬇ Download Portable ZIP</strong></a> •
+    <a href="#why-not-just-windows--tiling-wms">Why WindowAssist?</a> •
+    <a href="#what-it-does">Features</a> •
+    <a href="#cheat-sheet">Shortcuts</a> •
+    <a href="#install">Install</a>
   </p>
 </div>
 
 ---
 
-Windows makes multitasking harder than it needs to be: built-in virtual desktops are slow, dragging windows requires grabbing thin titlebars, and finding an app buried under other windows takes too many clicks.
+Native Windows virtual desktops switch **every monitor at once** with sluggish animations, moving windows means sniping tiny title bars, and your terminal or notes always get buried under a maximized browser.
 
-**WindowAssist** makes window management effortless. It gives you instant virtual desktops, a full visual bird's-eye overview of everything running, a quick-stash pocket for apps you need on hand, and mouse controls that let you grab and resize windows from anywhere on screen.
+**WindowAssist** brings Linux/macOS-grade speed to Windows 10 & 11 **without forcing your windows into a rigid tiling grid**. Keep your floating windows, games, and muscle memory—just make everything instantaneous.
 
-### Highlights
+### Why not just Windows / Tiling WMs?
 
-* **Zero-Lag Virtual Desktops:** Fast workspace transitions with per-monitor isolation, completely bypassing sluggish native Windows desktop animations.
-* **Anywhere Window Drag & Resize:** Move (`LButton`) and resize (`RButton`) windows from anywhere inside their frame by holding a modifier key—no need to aim at thin borders or headers.
-* **Global Scratchpad ("The Pocket"):** A dedicated floating window shelf with visual border accents to stash and summon terminals, messengers, or notes over any desktop.
-* **Cross-Desktop Alt+Tab:** A clean, MRU-ordered switcher displaying exact workspace locations on each app card.
-* **Fully Customizable Modifiers:** Uses <kbd>NumLock</kbd> by default to prevent hotkey collisions, but can be easily changed to any key (<kbd>CapsLock</kbd>, <kbd>Alt</kbd>, <kbd>Win</kbd>, etc.) in Settings.
-* **Auto-Hiding Title Bars:** Reclaim vertical screen space by hiding window headers until your cursor hovers near the top edge.
-* **Lightweight Architecture:** Powered by native Win32/DWM APIs and AutoHotkey v2 with WebView2 rendering—no Electron overhead or heavy background services.
-
----
-
-## Visual Overview
-
-Press a shortcut to bring up an interactive full-screen canvas displaying all your desktops, running windows, and pocketed apps. Drag windows between desktops, hover to see live previews, or right-click to center and close apps.
-
-<img width="1700" height="1007" alt="Image" src="https://github.com/user-attachments/assets/1074fe74-d956-4b4a-b7c0-3d99047c2a17" />
-
-* **Drag-and-Drop:** Move single or multiple windows between desktops with ease.
-* **Live Hover Previews:** Instant visual previews of open apps without switching to them.
-* **Quick Window Menu:** Right-click any app card to center, maximize, minimize, or close it.
-* **Resizable Canvas:** Adjust the grid width to fit your screen and preferences.
+| | Native Windows | Komorebi / GlazeWM | **WindowAssist** |
+| :--- | :---: | :---: | :---: |
+| **Desktop switching speed** | Slow animation | Instant | **< 1 ms, zero animation** |
+| **Per-monitor isolation** | ❌ Switches all monitors | ✅ | ✅ **Up to 9 per monitor** |
+| **Keep floating windows & games intact** | ✅ | ❌ Forces tiling | ✅ **Floating-first** |
+| **Drag & resize from anywhere in a window** | ❌ | ⚠️ | ✅ **+ Native Aero Snap** |
+| **Visual Overview + global scratchpad** | ⚠️ Basic `Win+Tab` | ❌ | ✅ **Drag-and-drop + Pocket** |
+| **Setup & config** | Built-in | YAML / CLI | ✅ **Live GUI (12 languages)** |
 
 ---
 
-## Key Features
+## What It Does
 
-### 1. Instant Virtual Desktops & Window Carry
-Switch between desktops with zero transition lag or animations getting in your way. When switching, hold the move key to take your active window with you and place it on your target desktop.
+### 1. Instant Per-Monitor Virtual Desktops
+Zero animations, zero delay. Switching to Desktop 3 on your main screen leaves your docs or video untouched on your second monitor. Hold <kbd>NumLock</kbd> + <kbd>Shift</kbd> to highlight the active window with a pulsing border and carry it with you as you switch.
 
-https://github.com/user-attachments/assets/601da3e5-6836-4cf4-9c65-10cbf5643756
+* **Crisp GDI+ OSD badge:** Shows your desktop number or pin icon—customizable position, colors, opacity, and corner radius.
+* **Crash-safe recovery:** Saves window positions in `state.json` and Win32 props; nothing stays stranded off-screen when you exit.
 
-* **Zero-Delay Switching:** Fast desktop transitions without Windows animations.
-* **Independent Monitors:** Each display has its own independent set of desktops.
-* **Clean Indicator:** A subtle on-screen badge shows your current desktop number.
-* **State Recovery:** Window positions, sizes, and maximized states are preserved across restarts.
+### 2. Visual Overview Canvas
+Hit <kbd>NumLock</kbd> + <kbd>Tab</kbd> (or <kbd>Space</kbd>) for a full-screen, WebView2-powered canvas of every workspace on the active monitor.
 
----
+* **Drag & drop in bulk:** <kbd>Ctrl</kbd>-click multiple windows and drop them onto another desktop or straight into **The Pocket**.
+* **Live hover previews:** Hover any card to peek at the real window without switching desktops.
+* **Quick actions:** Right-click to center (70%), maximize, minimize, or close; middle-click any app to close it, or any workspace to remove it.
+* **5 visual themes:** *Classic, Frosted Glass, Minimal, Compact, High Contrast*—with custom corner radius, opacity, and resizable width.
 
-### 2. The Pocket (Quick-Access App Shelf)
-Put any window into the "Pocket" to take it off your regular desktops. Pocketed windows stay ready in the background and can be summoned on top of any active desktop with a single click or shortcut.
+### 3. The Pocket — Your Global Scratchpad
+Stash any app into **The Pocket** (<kbd>NumLock</kbd> + <kbd>C</kbd>) to detach it from individual desktops. Summon or hide it over any workspace with <kbd>NumLock</kbd> + <kbd>MButton</kbd>, or cycle through pocketed tools with <kbd>NumLock</kbd> + <kbd>F</kbd>.
 
-https://github.com/user-attachments/assets/3eecfb7c-4652-4fcd-834e-d22022699759
+* **Smart 50% auto-dim:** Click the window behind your Pocket app and it automatically fades to 50% opacity so you can read or type underneath. Click back and it snaps to 100%.
+* **Built for utilities:** Terminals, AI chats, calculators, Telegram, or quick notes—always one click away, framed with a custom accent border.
 
-https://github.com/user-attachments/assets/569d3225-c94b-45f9-965f-92c563c4b42f
+### 4. Grab & Resize Anywhere (+ Aero Snap)
+Stop hunting for 1-pixel borders. Hold <kbd>NumLock</kbd> anywhere inside a window:
 
-* **Always One Key Away:** Great for calculators, messengers, note-taking apps, or command lines.
-* **Distinct Highlight:** Pocketed apps feature a subtle colored outline so you know they are in the shelf.
-* **Cycle Through Items:** Quickly step through all your pocketed tools in sequence.
+* **Drag <kbd>LButton</kbd>:** Move any window from anywhere inside it (even pulls maximized windows smoothly under your cursor).
+* **Drag <kbd>RButton</kbd>:** Smart 9-zone resize from the closest edge or corner.
+* **Snap Preview + Native Aero Snap:** Drag to a screen edge or corner to see a live highlight and snap into halves, quarters, or fullscreen.
+* **Keyboard precision:** Nudge with <kbd>NumLock</kbd> + <kbd>Arrows</kbd>, resize with <kbd>NumLock</kbd> + <kbd>Alt</kbd> + <kbd>Arrows</kbd>.
 
----
+### 5. Layer Peeker & Pin Floating Windows
+* **Layer Peeker (<kbd>NumLock</kbd> + Click <kbd>LButton</kbd>):** Surface the window directly beneath your cursor without moving anything. Keep clicking in the same spot to cycle through the entire Z-order stack.
+* **Pin on Top (<kbd>NumLock</kbd> + Click <kbd>RButton</kbd> / <kbd>E</kbd>):** Keep floating players, timers, or notes pinned above maximized apps on the active workspace.
 
-### 3. Anywhere Mouse Move & Resize
-Stop trying to aim your cursor at tiny window headers or 1-pixel borders just to move or resize an application.
+### 6. Auto-Hiding Title Bars & Cross-Desktop Alt+Tab
+* **Title Bar Auto-Hide:** Hide standard Win32 title bars for extra vertical space and reveal them on top-edge hover, with forced DWM dark captions (games, browsers, and custom frames are safely ignored).
+* **Cross-Desktop Alt+Tab:** Clean MRU switcher with `WS 1`, `WS 2` badges—release <kbd>Alt</kbd> or click a card to jump straight to that desktop and window.
+* **Minimal Taskbar Mode:** Optional toggle in Settings to hide the running task list for a distraction-free taskbar.
 
-https://github.com/user-attachments/assets/d25daead-d1e1-4dec-b453-c7d0096dc5f1
+### 7. Live Settings UI (No Config-File Pain)
+Press <kbd>NumLock</kbd> + <kbd>I</kbd> to customize everything in real time:
 
-* **Drag Anywhere:** Hold your modifier key and drag <kbd>Left Mouse Button</kbd> anywhere inside a window to move it.
-* **Resize Anywhere:** Hold your modifier key and drag <kbd>Right Mouse Button</kbd> anywhere inside a window to resize from the closest edge or corner.
-* **Snap Zones:** Drag to a screen edge or corner to snap the window to a half or quarter, with a live preview of the target.
-* **Keyboard Control:** Move with your modifier and arrow keys, resize with an extra <kbd>Alt</kbd>; the step size is configurable.
-
----
-
-### 4. Layer Peeker
-Bring obscured windows forward without clicking around or disrupting your desktop layout.
-
-https://github.com/user-attachments/assets/f53fac08-63af-4b73-bda2-6bedc51e1047
-
-* **Peek Underneath:** Hold your modifier key and click <kbd>Left Mouse Button</kbd> without dragging to bring forward the window lying directly beneath your cursor.
-* **Z-Order Cycling:** Keep clicking to cycle through all overlapping background windows on the current desktop.
-
----
-
-### 5. Pin Windows on Top
-Keep floating utility windows above all maximized applications with a single shortcut or click.
-
-https://github.com/user-attachments/assets/cf4046b8-79ba-4554-8bcb-a9261a513b13
-
-* **Elevated Priority:** Pinned floating windows stay visible over full-screen maximized windows without leaving the workspace.
-* **Quick Toggle:** Toggle pinned states on the fly using <kbd>NumLock</kbd> + click <kbd>RButton</kbd> or a dedicated hotkey.
+* **No `NumLock` on your keyboard?** Swap the primary modifier to <kbd>CapsLock</kbd>, <kbd>Alt</kbd>, <kbd>Win</kbd>, or any key across all bindings in **one click**.
+* **Interactive key recorder:** Bind keys, mouse buttons, or scroll wheels with live conflict warnings and multiple profiles.
+* **Zero-UAC autostart:** Optional Task Scheduler startup with admin rights—no UAC prompt at login.
+* **12 languages & JSON backup:** English, Russian, Chinese (Simplified), Spanish, German, French, Portuguese (BR), Japanese, Korean, Italian, Polish, and Turkish. Export/import everything anytime.
 
 ---
 
-### 6. Auto-Hiding Window Title Bars
-Maximize your usable screen real estate by removing top caption bars from windows while keeping them easy to access.
+## Cheat Sheet
 
-https://github.com/user-attachments/assets/992d6043-235f-47ca-8bac-839e2aec54f7
-
-* **Top-Edge Reveal:** Title bars smoothly reveal when you hover your cursor near the top edge of the window or screen.
-* **Dark Caption Support:** Automatically applies dark styling to native Windows caption bars.
-* **Smart Filtering:** Automatically preserves title bars on games, browsers, and custom client frames.
-
----
-
-### 7. Smart Cross-Desktop Alt+Tab
-Replaces standard task switching with a clean overlay that shows which desktop each application lives on.
-
-https://github.com/user-attachments/assets/833b1a83-c318-4e42-bd64-e2b934eb158d
-
-* **Desktop Badges:** Clearly labels every card with its workspace (`WS 1`, `WS 2`, etc.).
-* **MRU Order:** Keeps your most recently used windows prioritized at the front of the list.
-
----
-
-### 8. Settings & Interactive Key Recorder
-A modern, built-in settings interface that lets you customize every key, color, and behavior in real time.
-
-https://github.com/user-attachments/assets/b7900ba6-071c-42e5-b26e-1cdd2f580ce2
-
-https://github.com/user-attachments/assets/762e965c-3af6-4151-8522-dfd69f56cb17
-
-* **Interactive Key Recorder:** Click `+ Add`, press any key, modifier, mouse button, or scroll wheel to bind it immediately.
-* **Custom Modifiers:** Easily switch the default <kbd>NumLock</kbd> modifier to <kbd>CapsLock</kbd>, <kbd>Alt</kbd>, or any other key.
-* **Multiple Profiles:** Create, duplicate, rename, or restore different shortcut setups.
-* **12 languages:** English, Russian, Simplified Chinese, Spanish, German, French, Brazilian Portuguese, Japanese, Korean, Italian, Polish and Turkish.
-* **Native look:** The settings window follows the Windows app theme (light or dark) and the system accent color, with a flat Windows 10/11 layout and no acrylic blur.
-* **Run at sign-in:** Optional autostart through a Task Scheduler task with administrator rights, so no UAC prompt appears at logon.
-* **Backup & Transfer:** Export and import all settings and keybinding profiles as a JSON file.
-* **Conflict Warnings:** Actions that share the same shortcut are flagged in the keybinding list.
-
----
-
-## Default Shortcuts
-
-*All shortcuts can be remapped in Settings (<kbd>NumLock</kbd> + <kbd>I</kbd>).*
+*Every shortcut is remappable in Settings (<kbd>NumLock</kbd> + <kbd>I</kbd>).*
 
 | Action | Shortcut |
 | :--- | :--- |
-| **Overview Canvas** | <kbd>NumLock</kbd> + <kbd>Tab</kbd> *or* <kbd>NumLock</kbd> + <kbd>Space</kbd> |
+| **Overview Canvas** | <kbd>NumLock</kbd> + <kbd>Tab</kbd> *or* <kbd>Space</kbd> |
 | **Switch Desktop (1–9)** | <kbd>NumLock</kbd> + <kbd>1</kbd>…<kbd>9</kbd> |
-| **Move Window to Desktop (1–9)** | <kbd>NumLock</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd>…<kbd>9</kbd> |
-| **Previous / Next Desktop** | <kbd>NumLock</kbd> + <kbd>Z</kbd> / <kbd>X</kbd> *(or <kbd>WheelUp</kbd> / <kbd>WheelDown</kbd>)* |
-| **Move Window Anywhere** | Hold <kbd>NumLock</kbd> + Drag <kbd>LButton</kbd> |
-| **Resize Window Anywhere** | Hold <kbd>NumLock</kbd> + Drag <kbd>RButton</kbd> |
-| **Move Window (keyboard)** | <kbd>NumLock</kbd> + <kbd>←</kbd> / <kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd> |
-| **Resize Window (keyboard)** | <kbd>NumLock</kbd> + <kbd>Alt</kbd> + <kbd>←</kbd> / <kbd>→</kbd> / <kbd>↑</kbd> / <kbd>↓</kbd> |
-| **Layer Peeker (Cycle overlapping)** | <kbd>NumLock</kbd> + Click <kbd>LButton</kbd> |
-| **Pin Window on Top** | <kbd>NumLock</kbd> + Click <kbd>RButton</kbd> |
-| **Add / Remove Window to Pocket** | <kbd>NumLock</kbd> + <kbd>C</kbd> |
-| **Cycle Pocket Windows** | <kbd>NumLock</kbd> + <kbd>F</kbd> |
-| **Summon / Dismiss Pocket** | <kbd>NumLock</kbd> + <kbd>MButton</kbd> |
-| **Cross-Workspace Alt+Tab** | <kbd>Alt</kbd> + <kbd>Tab</kbd> |
-| **Close Active Window** | <kbd>NumLock</kbd> + <kbd>Q</kbd> |
-| **Minimize Active Window** | <kbd>NumLock</kbd> + <kbd>A</kbd> |
-| **Open Settings** | <kbd>NumLock</kbd> + <kbd>I</kbd> |
-| **Quick Reload** | <kbd>NumLock</kbd> + <kbd>Ctrl</kbd> + <kbd>R</kbd> |
-| **Panic Exit** | <kbd>NumLock</kbd> + <kbd>Insert</kbd> |
+| **Carry Window to Desktop (1–9)** | <kbd>NumLock</kbd> + <kbd>Shift</kbd> + <kbd>1</kbd>…<kbd>9</kbd> |
+| **Prev / Next Desktop** | <kbd>NumLock</kbd> + <kbd>Z</kbd> / <kbd>X</kbd> *(or <kbd>WheelUp</kbd> / <kbd>WheelDown</kbd>)* |
+| **Move / Resize Window (Mouse)** | Hold <kbd>NumLock</kbd> + Drag <kbd>LButton</kbd> / <kbd>RButton</kbd> |
+| **Move / Resize Window (Keys)** | <kbd>NumLock</kbd> + <kbd>Arrows</kbd> / <kbd>NumLock</kbd> + <kbd>Alt</kbd> + <kbd>Arrows</kbd> |
+| **Layer Peeker / Pin Floating** | Hold <kbd>NumLock</kbd> + Click <kbd>LButton</kbd> / <kbd>RButton</kbd> *(or <kbd>E</kbd>)* |
+| **Pocket: Add / Cycle / Summon** | <kbd>NumLock</kbd> + <kbd>C</kbd> / <kbd>F</kbd> / <kbd>MButton</kbd> |
+| **Cross-Desktop Alt+Tab** | <kbd>Alt</kbd> + <kbd>Tab</kbd> |
+| **Close / Minimize Window** | <kbd>NumLock</kbd> + <kbd>Q</kbd> / <kbd>A</kbd> |
+| **Settings / Reload / Panic Exit** | <kbd>NumLock</kbd> + <kbd>I</kbd> / <kbd>Ctrl</kbd>+<kbd>R</kbd> / <kbd>Insert</kbd> |
 
 ---
 
-## Requirements
+## Install
 
-* **Operating System:** Windows 10 (version 1809+) or Windows 11 (64-bit).
-* **WebView2 Runtime:** Included by default in Windows 11 and modern Windows 10 installations.
-* **AutoHotkey:** [AutoHotkey v2.0+](https://www.autohotkey.com/) *(only required if running directly from source)*.
-* **Permissions:** Administrator privileges are recommended so global window actions work reliably over elevated programs (Task Manager, Terminal, etc.).
+### Portable ZIP (Easiest)
+1. Grab the latest `WindowAssist-vX.Y.Z.zip` from [**Releases**](https://github.com/DOBOFood/WindowAssist/releases/latest).
+2. Extract anywhere and run `WindowAssist.exe`.
 
----
-
-## Installation & Running
-
-### Run from Source
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/DOBOFood/WindowAssist.git
-   cd WindowAssist
-   ```
-2. Launch `WindowAssist.ahk` with AutoHotkey v2.
-
-### Build Portable Executable
-Run `build.bat` in the repository root. It will compile a standalone binary into the `dist/` directory:
-```cmd
-build.bat
+### From Source / Build Yourself
+Requires Windows 10 (1809+) or 11 (x64) and [AutoHotkey v2.0+](https://www.autohotkey.com/).
+```bash
+git clone https://github.com/DOBOFood/WindowAssist.git
+cd WindowAssist
+WindowAssist.ahk   # or run build.bat to compile into dist/
 ```
 
----
-
-## Configuration
-
-Settings are saved in `config.json` in the root folder. All adjustments made inside the Settings UI apply immediately in real time. If the file is missing or reset, default values are restored automatically.
+> **Note:** WindowAssist requests Administrator privileges on launch so hotkeys and window dragging work over elevated apps (Task Manager, Terminal, IDEs). Any temporary registry tweaks (`ForegroundFlashCount` / `ForegroundLockTimeout`) are backed up to `system-backup.json` and restored cleanly on exit.
 
 ---
 
 ## License
 
-This project is open-source software licensed under the [MIT License](LICENSE).
+[MIT License](LICENSE)
