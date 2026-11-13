@@ -349,10 +349,10 @@ function syncFormValues() {
     elKeyboardStep.value = (step !== undefined) ? step : (defaultStep !== undefined ? defaultStep : 20);
   }
 
-  const elSnapMode = document.getElementById("gen_wm_snapMode");
-  if (elSnapMode) {
-    const mode = getPropertyByPath(currentConfig, "general.windowMover.snapMode");
-    elSnapMode.value = (mode === "native" || mode === "custom") ? mode : "custom";
+  const elSnapEnabled = document.getElementById("gen_wm_snapEnabled");
+  if (elSnapEnabled) {
+    const snapVal = getPropertyByPath(currentConfig, "general.windowMover.snapEnabled");
+    elSnapEnabled.checked = (snapVal === undefined) ? true : !!snapVal;
   }
 
   const elAutostart = document.getElementById("gen_autostart");

@@ -1,7 +1,7 @@
 #Requires AutoHotkey v2.0
 
 class ConfigManager {
-    static SchemaVersion := 2
+    static SchemaVersion := 3
     static configPath := A_ScriptDir "\config.json"
     static configData := Map()
 
@@ -94,7 +94,7 @@ class ConfigManager {
                 "windowMover", Map(
                     "safeZone", 8,
                     "keyboardStep", 20,
-                    "snapMode", "custom"
+                    "snapEnabled", true
                 ),
                 "autostart", Map(
                     "enabled", false
@@ -210,11 +210,31 @@ class ConfigManager {
         if (version < 2 && this._RebindKeyboardDefaults(config))
             changed := true
 
+        if (version < 3 && this._MigrateSnapSetting(config))
+            changed := true
+
         if (!config.Has("configVersion") || version != this.SchemaVersion) {
             config["configVersion"] := this.SchemaVersion
             changed := true
         }
 
+        return changed
+    }
+
+    static _MigrateSnapSetting(config) {
+        if (!config.Has("general") || !(config["general"] is Map))
+            return false
+        gen := config["general"]
+        if (!gen.Has("windowMover") || !(gen["windowMover"] is Map))
+            return false
+        wm := gen["windowMover"]
+        changed := false
+        if wm.Has("snapMode") {
+            if !wm.Has("snapEnabled")
+                wm["snapEnabled"] := true
+            wm.Delete("snapMode")
+            changed := true
+        }
         return changed
     }
 

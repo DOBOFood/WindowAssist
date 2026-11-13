@@ -29,7 +29,7 @@ const DEFAULT_CONFIG = {
     },
     "settingsTheme": "auto"
   },
-  "configVersion": 2,
+  "configVersion": 3,
   "general": {
     "altTab": {
       "enabled": 1,
@@ -57,7 +57,7 @@ const DEFAULT_CONFIG = {
     "windowMover": {
       "keyboardStep": 20,
       "safeZone": 8,
-      "snapMode": "custom"
+      "snapEnabled": 1
     }
   },
   "hotkeys": {

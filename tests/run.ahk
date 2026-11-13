@@ -86,18 +86,27 @@ AssertEq("keyboard step clamps high", WindowMover.KeyboardStepPx(), 200)
 SetKeyboardStep("abc")
 AssertEq("keyboard step falls back on garbage", WindowMover.KeyboardStepPx(), 20)
 
-SetSnapMode(value) {
-    ConfigManager.configData := Map("general", Map("windowMover", Map("snapMode", value)))
+SetSnapEnabled(value) {
+    ConfigManager.configData := Map("general", Map("windowMover", Map("snapEnabled", value)))
 }
 
 ConfigManager.configData := Map()
-AssertEq("snap mode default", WindowMover.SnapMode(), "custom")
+AssertTrue("snap enabled default is true", WindowMover.SnapEnabled())
 
-SetSnapMode("native")
-AssertEq("snap mode native", WindowMover.SnapMode(), "native")
+SetSnapEnabled(false)
+AssertTrue("snap enabled false", !WindowMover.SnapEnabled())
 
-SetSnapMode("weird")
-AssertEq("snap mode falls back on garbage", WindowMover.SnapMode(), "custom")
+SetSnapEnabled(0)
+AssertTrue("snap enabled 0", !WindowMover.SnapEnabled())
+
+SetSnapEnabled(true)
+AssertTrue("snap enabled true", WindowMover.SnapEnabled())
+
+SetSnapEnabled("true")
+AssertTrue("snap enabled string true", WindowMover.SnapEnabled())
+
+SetSnapEnabled("false")
+AssertTrue("snap enabled string false", !WindowMover.SnapEnabled())
 
 ; ------------------------------------------------------------------ Get paths
 
@@ -176,8 +185,19 @@ AssertTrue("keyboard bindings migrate", ConfigManager.Migrate(v1))
 AssertEq("old default rebound", JSON.Dump(v1["hotkeys"]["profiles"]["default"]["window_move_left"]), '["NumLock + Left"]')
 AssertEq("custom binding kept", JSON.Dump(v1["hotkeys"]["profiles"]["custom"]["window_move_left"]), '["Ctrl + Shift + L"]')
 AssertEq("other bindings kept", JSON.Dump(v1["hotkeys"]["profiles"]["default"]["window_close"]), '["NumLock + Q"]')
-AssertEq("version bumped to schema 2", v1["configVersion"], 2)
+AssertEq("version bumped to current schema", v1["configVersion"], ConfigManager.SchemaVersion)
 AssertTrue("rebind migration is idempotent", !ConfigManager.Migrate(v1))
+
+; Schema 3 replaces snapMode with snapEnabled.
+v2 := Map(
+    "configVersion", 2,
+    "general", Map("windowMover", Map("safeZone", 8, "snapMode", "custom"))
+)
+AssertTrue("snapMode config migrates", ConfigManager.Migrate(v2))
+AssertTrue("snapMode removed on migration", !v2["general"]["windowMover"].Has("snapMode"))
+AssertTrue("snapEnabled added on migration", v2["general"]["windowMover"]["snapEnabled"] == true)
+AssertEq("version bumped to schema 3", v2["configVersion"], 3)
+AssertTrue("snap migration is idempotent", !ConfigManager.Migrate(v2))
 
 ; ------------------------------------------------------------------- Import
 
@@ -213,18 +233,25 @@ try FileDelete(exportPath)
 ; ---------------------------------------------------------------- Snap zones
 
 zone := ComputeSnapZone(10, 10, 0, 0, 1000, 800, 20)
-AssertEq("snap top-left kind", zone["kind"], "quarter")
+AssertEq("snap top-left kind", zone["kind"], "top_left")
 AssertEq("snap top-left x", zone["x"], 0)
 AssertEq("snap top-left y", zone["y"], 0)
 AssertEq("snap top-left width", zone["w"], 500)
 AssertEq("snap top-left height", zone["h"], 400)
 
 zone := ComputeSnapZone(990, 10, 0, 0, 1000, 800, 20)
+AssertEq("snap top-right kind", zone["kind"], "top_right")
 AssertEq("snap top-right x", zone["x"], 500)
 AssertEq("snap top-right width", zone["w"], 500)
 
 zone := ComputeSnapZone(10, 790, 0, 0, 1000, 800, 20)
+AssertEq("snap bottom-left kind", zone["kind"], "bottom_left")
 AssertEq("snap bottom-left y", zone["y"], 400)
+
+zone := ComputeSnapZone(990, 790, 0, 0, 1000, 800, 20)
+AssertEq("snap bottom-right kind", zone["kind"], "bottom_right")
+AssertEq("snap bottom-right x", zone["x"], 500)
+AssertEq("snap bottom-right y", zone["y"], 400)
 
 zone := ComputeSnapZone(500, 5, 0, 0, 1000, 800, 20)
 AssertEq("snap top edge maximises", zone["kind"], "max")
@@ -237,31 +264,29 @@ AssertEq("snap left half width", zone["w"], 500)
 zone := ComputeSnapZone(995, 400, 0, 0, 1000, 800, 20)
 AssertEq("snap right half", zone["kind"], "right")
 
-zone := ComputeSnapZone(500, 795, 0, 0, 1000, 800, 20)
-AssertEq("snap bottom half", zone["kind"], "bottom")
-
+AssertEq("no snap on bottom centre", Type(ComputeSnapZone(500, 795, 0, 0, 1000, 800, 20)), "Integer")
 AssertEq("no snap in the middle", Type(ComputeSnapZone(500, 400, 0, 0, 1000, 800, 20)), "Integer")
 AssertEq("no snap on a degenerate monitor", Type(ComputeSnapZone(0, 0, 0, 0, 0, 0, 20)), "Integer")
 
-; ------------------------------------------------------ Frame padding (snap)
+; ----------------------------------------------------- Native Aero Snap keys
 
-zone := Map("x", 100, "y", 50, "w", 500, "h", 400)
-padding := Map("left", 8, "top", 0, "right", 8, "bottom", 8)
-padded := ApplyFramePadding(zone, padding)
-AssertEq("padding shifts x outwards", padded["x"], 92)
-AssertEq("padding keeps y when top is zero", padded["y"], 50)
-AssertEq("padding grows width", padded["w"], 516)
-AssertEq("padding grows height", padded["h"], 408)
-
-identity := ApplyFramePadding(zone, Map("left", 0, "top", 0, "right", 0, "bottom", 0))
-AssertEq("zero padding keeps x", identity["x"], 100)
-AssertEq("zero padding keeps width", identity["w"], 500)
-
-AssertEq("native keys for left half", JSON.Dump(NativeSnapKeys(Map("kind", "left"))), '["#Left"]')
-AssertEq("native keys for right half", JSON.Dump(NativeSnapKeys(Map("kind", "right"))), '["#Right"]')
-AssertEq("no native keys for quarters", NativeSnapKeys(Map("kind", "quarter")).Length, 0)
-AssertEq("no native keys for bottom half", NativeSnapKeys(Map("kind", "bottom")).Length, 0)
+AssertEq("native keys for left half", JSON.Dump(NativeSnapKeys(Map("kind", "left"))), '["Left"]')
+AssertEq("native keys for right half", JSON.Dump(NativeSnapKeys(Map("kind", "right"))), '["Right"]')
+AssertEq("native keys for maximize", JSON.Dump(NativeSnapKeys(Map("kind", "max"))), '["Up"]')
+AssertEq("native keys for top-left", JSON.Dump(NativeSnapKeys(Map("kind", "top_left"))), '["Left", "Up"]')
+AssertEq("native keys for bottom-left", JSON.Dump(NativeSnapKeys(Map("kind", "bottom_left"))), '["Left", "Down"]')
+AssertEq("native keys for top-right", JSON.Dump(NativeSnapKeys(Map("kind", "top_right"))), '["Right", "Up"]')
+AssertEq("native keys for bottom-right", JSON.Dump(NativeSnapKeys(Map("kind", "bottom_right"))), '["Right", "Down"]')
+AssertEq("no native keys for unknown kind", NativeSnapKeys(Map("kind", "bottom")).Length, 0)
 AssertEq("no native keys without a zone", NativeSnapKeys(0).Length, 0)
+
+AssertEq("send sequence wraps Win around single arrow",
+    BuildSnapSendSequence(["Left"]),
+    "{LCtrl up}{RCtrl up}{LAlt up}{RAlt up}{LShift up}{RShift up}{LWin down}{Left}{LWin up}")
+AssertEq("send sequence wraps Win around corner arrows",
+    BuildSnapSendSequence(["Right", "Down"]),
+    "{LCtrl up}{RCtrl up}{LAlt up}{RAlt up}{LShift up}{RShift up}{LWin down}{Right}{Down}{LWin up}")
+AssertEq("empty send sequence for empty keys", BuildSnapSendSequence([]), "")
 
 defaults := ConfigManager.GetDefaultConfig()
 AssertTrue("defaults carry configVersion", defaults.Has("configVersion"))
@@ -269,7 +294,7 @@ AssertTrue("defaults have no legacy titleBar", !defaults.Has("titleBar"))
 AssertTrue("defaults have no legacy altTab", !defaults.Has("altTab"))
 AssertEq("visibleHeight lives in general", defaults["general"]["titleBar"]["visibleHeight"], 40)
 AssertTrue("keyboard step default", defaults["general"]["windowMover"]["keyboardStep"] == 20)
-AssertTrue("snap mode default is custom", defaults["general"]["windowMover"]["snapMode"] == "custom")
+AssertTrue("snap enabled default is true", defaults["general"]["windowMover"]["snapEnabled"] == true)
 AssertTrue("autostart default is off", !defaults["general"]["autostart"]["enabled"])
 
 keyboardActions := [
@@ -290,7 +315,7 @@ for actionKey in keyboardActions
     AssertTrue("settings list " actionKey, InStr(settingsJs, '"' actionKey '"') > 0)
 
 settingsHtml := FileRead(A_ScriptDir "\..\web\settings.html", "UTF-8")
-AssertTrue("settings expose the snap mode control", InStr(settingsHtml, 'id="gen_wm_snapMode"') > 0)
+AssertTrue("settings expose the snap toggle control", InStr(settingsHtml, 'id="gen_wm_snapEnabled"') > 0)
 
 ; ------------------------------------------------------------- Autostart XML
 
@@ -334,7 +359,7 @@ for key in ["profileAlreadyExists", "defaultProfileName", "groupHotkeysSys",
             "autostartEnabled", "autostartFailed", "groupData", "settingsExport",
             "settingsImport", "settingsExported", "settingsImportFailed",
             "hotkeyConflictBadge", "hotkeyConflictsSummary",
-            "windowMoverSnapMode", "snapMode_custom", "snapMode_native",
+            "windowMoverSnapEnabled", "windowMoverSnapEnabled_desc",
             "act_window_move_left", "act_window_move_right", "act_window_move_up",
             "act_window_move_down", "act_window_resize_wider", "act_window_resize_narrower",
             "act_window_resize_taller", "act_window_resize_shorter",

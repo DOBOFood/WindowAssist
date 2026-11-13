@@ -31,12 +31,22 @@ class WindowMover {
         return Max(1, Min(this.MaxKeyboardStep, value))
     }
 
-    ; "custom" snaps with SetWindowPos (instant), "native" lets Windows snap
-    ; halves with Win+Arrow and falls back to custom for other zones.
-    static SnapMode() {
-        mode := ConfigManager.Get("general.windowMover.snapMode", "custom")
-        return (mode == "native") ? "native" : "custom"
+    ; Enables Windows Aero Snap (Win+Arrow) when dragging windows to screen edges/corners.
+    static SnapEnabled() {
+        val := ConfigManager.Get("general.windowMover.snapEnabled", true)
+        return (val == true || val == 1 || val == "true" || val == "1")
     }
+}
+
+GetMonitorAtPoint(x, y) {
+    monCount := MonitorGetCount()
+    Loop monCount {
+        mL := 0, mT := 0, mR := 0, mB := 0
+        MonitorGet(A_Index, &mL, &mT, &mR, &mB)
+        if (x >= mL && x < mR && y >= mT && y < mB)
+            return A_Index
+    }
+    return 1
 }
 
 ; A click-through rectangle that previews where a dragged window will snap.
@@ -50,7 +60,7 @@ class SnapPreview {
             return
 
         if !this.gui {
-            this.gui := Gui("-Caption +ToolWindow +AlwaysOnTop +E0x20 +E0x08000000")
+            this.gui := Gui("-Caption +ToolWindow -DPIScale +AlwaysOnTop +E0x20 +E0x08000000")
             this.gui.BackColor := "0078D7"
         }
         this.gui.Show("NA x" zone["x"] " y" zone["y"] " w" zone["w"] " h" zone["h"])
@@ -65,8 +75,8 @@ class SnapPreview {
     }
 }
 
-; Returns the zone under the cursor, or 0. Corners win over edges, the top
-; edge centre maximises (handled by the drag loop).
+; Returns the Aero Snap zone under the cursor, or 0.
+; Corners produce quarters, top edge centre maximises, left/right edges produce halves.
 ComputeSnapZone(curX, curY, mL, mT, mR, mB, threshold := 20) {
     width := mR - mL
     height := mB - mT
@@ -81,17 +91,15 @@ ComputeSnapZone(curX, curY, mL, mT, mR, mB, threshold := 20) {
     nearBottom := (curY >= mB - threshold)
 
     if (nearTop && nearLeft)
-        return Map("kind", "quarter", "x", mL, "y", mT, "w", halfW, "h", halfH)
+        return Map("kind", "top_left", "x", mL, "y", mT, "w", halfW, "h", halfH)
     if (nearTop && nearRight)
-        return Map("kind", "quarter", "x", mL + halfW, "y", mT, "w", width - halfW, "h", halfH)
+        return Map("kind", "top_right", "x", mL + halfW, "y", mT, "w", width - halfW, "h", halfH)
     if (nearBottom && nearLeft)
-        return Map("kind", "quarter", "x", mL, "y", mT + halfH, "w", halfW, "h", height - halfH)
+        return Map("kind", "bottom_left", "x", mL, "y", mT + halfH, "w", halfW, "h", height - halfH)
     if (nearBottom && nearRight)
-        return Map("kind", "quarter", "x", mL + halfW, "y", mT + halfH, "w", width - halfW, "h", height - halfH)
+        return Map("kind", "bottom_right", "x", mL + halfW, "y", mT + halfH, "w", width - halfW, "h", height - halfH)
     if nearTop
         return Map("kind", "max", "x", mL, "y", mT, "w", width, "h", height)
-    if nearBottom
-        return Map("kind", "bottom", "x", mL, "y", mT + halfH, "w", width, "h", height - halfH)
     if nearLeft
         return Map("kind", "left", "x", mL, "y", mT, "w", halfW, "h", height)
     if nearRight
@@ -99,89 +107,99 @@ ComputeSnapZone(curX, curY, mL, mT, mR, mB, threshold := 20) {
     return 0
 }
 
-; Windows draws the visible frame inside the window rect (8 px borders on
-; Win10/11), so a raw SetWindowPos leaves gaps between snapped windows.
-GetFramePadding(hwnd) {
-    empty := Map("left", 0, "top", 0, "right", 0, "bottom", 0)
-    try {
-        wx := 0, wy := 0, ww := 0, wh := 0
-        WinGetPos(&wx, &wy, &ww, &wh, "ahk_id " hwnd)
-        if (ww <= 0 || wh <= 0)
-            return empty
-
-        buf := Buffer(16, 0)
-        result := DllCall("dwmapi\DwmGetWindowAttribute", "ptr", hwnd
-            , "uint", 9 ; DWMWA_EXTENDED_FRAME_BOUNDS
-            , "ptr", buf, "uint", 16, "int")
-        if (result != 0)
-            return empty
-
-        visibleLeft := NumGet(buf, 0, "Int"), visibleTop := NumGet(buf, 4, "Int")
-        visibleRight := NumGet(buf, 8, "Int"), visibleBottom := NumGet(buf, 12, "Int")
-        if (visibleRight <= visibleLeft || visibleBottom <= visibleTop)
-            return empty
-
-        return Map(
-            "left", Max(0, visibleLeft - wx),
-            "top", Max(0, visibleTop - wy),
-            "right", Max(0, (wx + ww) - visibleRight),
-            "bottom", Max(0, (wy + wh) - visibleBottom)
-        )
-    } catch {
-        return empty
-    }
-}
-
-; Grows a visible target rectangle into the window rectangle Windows expects.
-ApplyFramePadding(zone, padding) {
-    return Map(
-        "x", zone["x"] - padding["left"],
-        "y", zone["y"] - padding["top"],
-        "w", zone["w"] + padding["left"] + padding["right"],
-        "h", zone["h"] + padding["top"] + padding["bottom"]
-    )
-}
-
-ApplySnapGeometry(winId, zone) {
-    padded := ApplyFramePadding(zone, GetFramePadding(winId))
-    DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
-        , "int", padded["x"], "int", padded["y"]
-        , "int", padded["w"], "int", padded["h"]
-        , "uint", 0x0014) ; SWP_NOZORDER | SWP_NOACTIVATE
-}
-
-; Native Aero Snap can only produce left/right halves and maximize through
-; Win+Arrow; quarters and the bottom half keep the custom placement.
+; Maps a snap zone to the Windows Aero Snap arrow key sequence (with Win held).
 NativeSnapKeys(zone) {
-    if !zone
+    if !(zone is Map) || !zone.Has("kind")
         return []
-    kind := zone["kind"]
-    if (kind == "left")
-        return ["#Left"]
-    if (kind == "right")
-        return ["#Right"]
+    switch zone["kind"] {
+        case "left":         return ["Left"]
+        case "right":        return ["Right"]
+        case "max":          return ["Up"]
+        case "top_left":     return ["Left", "Up"]
+        case "bottom_left":  return ["Left", "Down"]
+        case "top_right":    return ["Right", "Up"]
+        case "bottom_right": return ["Right", "Down"]
+    }
     return []
 }
 
-TryNativeSnap(winId, zone) {
+BuildSnapSendSequence(keys) {
+    if !(keys is Array) || keys.Length == 0
+        return ""
+    seq := "{LCtrl up}{RCtrl up}{LAlt up}{RAlt up}{LShift up}{RShift up}{LWin down}"
+    for k in keys
+        seq .= "{" k "}"
+    seq .= "{LWin up}"
+    return seq
+}
+
+TryNativeSnap(winId, zone, mL := 0, mT := 0, mR := 0, mB := 0) {
     keys := NativeSnapKeys(zone)
     if (keys.Length == 0)
         return false
 
-    ; A held modifier would change what Win+Arrow does.
-    if (GetKeyState("Alt", "P") || GetKeyState("Ctrl", "P") || GetKeyState("Shift", "P")
-        || GetKeyState("LWin", "P") || GetKeyState("RWin", "P"))
-        return false
+    ; Clear arranged/maximized state before issuing Win+Arrow so Windows snaps cleanly
+    ; to the target zone instead of stepping from a previous snap state.
+    isArr := false
+    try isArr := (DllCall("user32\IsWindowArranged", "ptr", winId, "int") != 0)
+    isMax := (WinGetMinMax("ahk_id " winId) == 1)
+    if (isArr || isMax) {
+        DllCall("user32\ShowWindow", "ptr", winId, "int", 9) ; SW_RESTORE
+        Sleep(40)
+    }
+
+    ; Ensure the window center sits inside the target monitor's work area so
+    ; Windows Aero Snap applies to the monitor where the cursor was released.
+    if (mR > mL && mB > mT) {
+        wx := 0, wy := 0, ww := 0, wh := 0
+        WinGetPos(&wx, &wy, &ww, &wh, "ahk_id " winId)
+        cx := wx + ww / 2
+        cy := wy + wh / 2
+        if (cx < mL || cx >= mR || cy < mT || cy >= mB) {
+            monW := mR - mL
+            monH := mB - mT
+            targetW := Min(ww, Round(monW * 0.7))
+            targetH := Min(wh, Round(monH * 0.7))
+            targetX := Round(mL + (monW - targetW) / 2)
+            targetY := Round(mT + (monH - targetH) / 2)
+            DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
+                , "int", targetX, "int", targetY, "int", targetW, "int", targetH
+                , "uint", 0x0014) ; SWP_NOZORDER | SWP_NOACTIVATE
+        }
+    }
 
     if (DllCall("GetForegroundWindow", "ptr") != winId) {
         DllCall("user32\SetForegroundWindow", "ptr", winId)
-        Sleep(30)
+        Loop 10 {
+            if (DllCall("GetForegroundWindow", "ptr") == winId)
+                break
+            Sleep(15)
+        }
         if (DllCall("GetForegroundWindow", "ptr") != winId)
             return false
+        Sleep(20)
     }
 
-    for key in keys
-        Send(key)
+    beforeX := 0, beforeY := 0, beforeW := 0, beforeH := 0
+    WinGetPos(&beforeX, &beforeY, &beforeW, &beforeH, "ahk_id " winId)
+
+    prevDelay := A_KeyDelay
+    prevDur := A_KeyDuration
+    SetKeyDelay(20, 20)
+    SendEvent(BuildSnapSendSequence(keys))
+    SetKeyDelay(prevDelay, prevDur)
+
+    Loop 12 {
+        Sleep(20)
+        curX := 0, curY := 0, curW := 0, curH := 0
+        WinGetPos(&curX, &curY, &curW, &curH, "ahk_id " winId)
+        if (Abs(curX - beforeX) > 4 || Abs(curY - beforeY) > 4
+            || Abs(curW - beforeW) > 4 || Abs(curH - beforeH) > 4
+            || WinGetMinMax("ahk_id " winId) == 1) {
+            Sleep(40)
+            break
+        }
+    }
     return true
 }
 
@@ -283,123 +301,66 @@ MoveWindowWithMouse() {
         if (DllCall("GetForegroundWindow", "ptr") != winId)
             DllCall("user32\SetForegroundWindow", "ptr", winId)
         
-        savedRestW := origW
-        savedRestH := origH
-        wasSnappedMax := false
+        snapEnabled := WindowMover.SnapEnabled()
         lastCurX := startX, lastCurY := startY
 
-        wMon := GetWindowMonitor(winId)
+        wMon := GetMonitorAtPoint(startX, startY)
         mL := 0, mT := 0, mR := 0, mB := 0
-        MonitorGet(wMon, &mL, &mT, &mR, &mB)
+        MonitorGetWorkArea(wMon, &mL, &mT, &mR, &mB)
 
         isInPocketWin := PocketManager.IsInPocket(winId)
-        checkMonCount := 0
         snapThreshold := 20
 
         while GetKeyState("LButton", "P") {
             MouseGetPos(&curX, &curY)
 
-            checkMonCount++
-            if (checkMonCount >= 30) {
-                checkMonCount := 0
-                newMon := GetWindowMonitor(winId)
-                if (newMon != wMon) {
-                    wMon := newMon
-                    MonitorGet(wMon, &mL, &mT, &mR, &mB)
-                }
+            if (curX != lastCurX || curY != lastCurY) {
+                lastCurX := curX, lastCurY := curY
+                newX := origX + (curX - startX)
+                newY := origY + (curY - startY)
+
+                ; Synchronous move: SWP_ASYNCWINDOWPOS queues every request on the target
+                ; thread and makes the window trail the cursor; SWP_NOREDRAW defers the
+                ; repaint until the drag ends. Apply each move immediately instead.
+                DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
+                    , "int", newX, "int", newY, "int", 0, "int", 0
+                    , "uint", 0x0015) ; SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
+
+                if (isInPocketWin)
+                    PocketManager.UpdateBorder(winId)
             }
 
-            ; Maximize only on the top edge centre, corners are snap zones.
-            if (curY <= mT + 1 && curX > mL + snapThreshold && curX < mR - snapThreshold) {
-                if (!wasSnappedMax) {
-                    wasSnappedMax := true
-                    DllCall("ShowWindow", "ptr", winId, "int", 3) ; SW_MAXIMIZE
+            if (snapEnabled) {
+                curMon := GetMonitorAtPoint(curX, curY)
+                if (curMon != wMon) {
+                    wMon := curMon
+                    MonitorGetWorkArea(wMon, &mL, &mT, &mR, &mB)
                 }
-            } else {
-                if (wasSnappedMax) {
-                    wasSnappedMax := false
-                    DllCall("ShowWindow", "ptr", winId, "int", 9) ; SW_RESTORE
-                    origW := savedRestW
-                    origH := savedRestH
-                    origX := Round(curX - (origW / 2))
-                    origY := Max(mT, curY - 20)
-                    startX := curX
-                    startY := curY
-                    lastCurX := curX, lastCurY := curY
-                    DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
-                        , "int", origX, "int", origY, "int", origW, "int", origH
-                        , "uint", 0x0214)
-                }
-
-                if (curX != lastCurX || curY != lastCurY) {
-                    lastCurX := curX, lastCurY := curY
-                    newX := origX + (curX - startX)
-                    newY := origY + (curY - startY)
-                    
-                    ; Synchronous move: SWP_ASYNCWINDOWPOS queues every request on the target
-                    ; thread and makes the window trail the cursor; SWP_NOREDRAW defers the
-                    ; repaint until the drag ends. Apply each move immediately instead.
-                    DllCall("user32\SetWindowPos", "ptr", winId, "ptr", 0
-                        , "int", newX, "int", newY, "int", 0, "int", 0
-                        , "uint", 0x0015) ; SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
-
-                    if (isInPocketWin)
-                        PocketManager.UpdateBorder(winId)
-                }
+                previewZone := ComputeSnapZone(curX, curY, mL, mT, mR, mB, snapThreshold)
+                if (previewZone)
+                    SnapPreview.Show(previewZone)
+                else
+                    SnapPreview.Hide()
             }
-
-            ; Show where the window will land; top-centre maximises live instead.
-            previewZone := ComputeSnapZone(curX, curY, mL, mT, mR, mB, snapThreshold)
-            if (previewZone && previewZone["kind"] != "max")
-                SnapPreview.Show(previewZone)
-            else
-                SnapPreview.Hide()
 
             DllCall("Sleep", "uint", 1)
         }
 
         MouseGetPos(&endX, &endY)
-        wMon := GetWindowMonitor(winId)
+        wMon := GetMonitorAtPoint(endX, endY)
         mL := 0, mT := 0, mR := 0, mB := 0
-        MonitorGet(wMon, &mL, &mT, &mR, &mB)
+        MonitorGetWorkArea(wMon, &mL, &mT, &mR, &mB)
 
         SnapPreview.Hide()
-        appliedSnap := false
-        finalZone := ComputeSnapZone(endX, endY, mL, mT, mR, mB, snapThreshold)
-        if (finalZone && finalZone["kind"] != "max") {
-            if (wasSnappedMax) {
-                wasSnappedMax := false
-                DllCall("ShowWindow", "ptr", winId, "int", 9) ; SW_RESTORE
+        if (snapEnabled) {
+            finalZone := ComputeSnapZone(endX, endY, mL, mT, mR, mB, snapThreshold)
+            if (finalZone) {
+                TryNativeSnap(winId, finalZone, mL, mT, mR, mB)
             }
-
-            if (WindowMover.SnapMode() == "native") {
-                beforeX := 0, beforeY := 0, beforeW := 0, beforeH := 0
-                WinGetPos(&beforeX, &beforeY, &beforeW, &beforeH, "ahk_id " winId)
-
-                if (TryNativeSnap(winId, finalZone)) {
-                    ; Let the system snap animation finish before saving geometry.
-                    Sleep(220)
-                }
-
-                afterX := 0, afterY := 0, afterW := 0, afterH := 0
-                WinGetPos(&afterX, &afterY, &afterW, &afterH, "ahk_id " winId)
-
-                ; If snapping is disabled in Windows, Win+Arrow did nothing.
-                ; Fall back to custom placement so the window still lands flush.
-                changed := Abs(afterX - beforeX) > 4 || Abs(afterY - beforeY) > 4
-                    || Abs(afterW - beforeW) > 4 || Abs(afterH - beforeH) > 4
-                if !changed
-                    ApplySnapGeometry(winId, finalZone)
-            } else {
-                ; Custom placement also compensates the invisible DWM borders,
-                ; otherwise visible window edges leave gaps.
-                ApplySnapGeometry(winId, finalZone)
-            }
-            appliedSnap := true
         }
 
-        if (!appliedSnap && (wasSnappedMax || endY <= mT + 1)) {
-            DllCall("ShowWindow", "ptr", winId, "int", 3) ; SW_MAXIMIZE
+        isMaxFinal := (WinGetMinMax("ahk_id " winId) == 1)
+        if (isMaxFinal) {
             if wsWindows.Has(winId) {
                 oldMon := wsWindows[winId].mon
                 wsWindows[winId].mon := wMon
