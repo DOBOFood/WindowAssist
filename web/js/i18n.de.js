@@ -180,6 +180,8 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder_desc": "Rahmen um Fenster im Pocket",
     "col_pocketBorderWidth": "Pocket-Rahmenstärke",
     "col_pocketBorderWidth_desc": "Breite des Hervorhebungsrahmens um Pocket-Fenster (px)",
+    "col_snapPreview": "Hervorhebung beim Einrasten am Rand (Aero Snap)",
+    "col_snapPreview_desc": "Vorschaufarbe beim Ziehen eines Fensters an einen Bildschirmrand oder eine Ecke",
     "groupOsdDesign": "Design der Wechsel-Benachrichtigungen (OSD)",
     "osdPreview": "Vorschau",
     "osdPreview_desc": "Auf eine Plakette klicken, um sie auf dem Bildschirm anzuzeigen",

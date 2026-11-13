@@ -180,6 +180,8 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder_desc": "围绕口袋中窗口绘制的边框",
     "col_pocketBorderWidth": "口袋边框粗细",
     "col_pocketBorderWidth_desc": "口袋中窗口高亮边框的宽度（px）",
+    "col_snapPreview": "边缘吸附高亮颜色 (Aero Snap)",
+    "col_snapPreview_desc": "将窗口拖动到屏幕边缘或角落时的预览区域颜色",
     "groupOsdDesign": "工作区切换通知样式 (OSD)",
     "osdPreview": "预览",
     "osdPreview_desc": "点击徽标即可在屏幕上预览显示",

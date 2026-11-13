@@ -53,15 +53,32 @@ GetMonitorAtPoint(x, y) {
 class SnapPreview {
     static gui := 0
     static lastRect := ""
+    static lastColor := ""
+    static DefaultColor := "0078D7"
+
+    static ColorHex() {
+        raw := ConfigManager.Get("appearance.colors.snapPreview", "#" this.DefaultColor)
+        s := Trim(String(raw))
+        if (SubStr(s, 1, 1) == "#")
+            s := SubStr(s, 2)
+        if !RegExMatch(s, "^[0-9A-Fa-f]{6}$")
+            return this.DefaultColor
+        return StrUpper(s)
+    }
 
     static Show(zone) {
         rect := zone["x"] "," zone["y"] "," zone["w"] "," zone["h"]
-        if (this.gui && rect == this.lastRect)
+        color := this.ColorHex()
+        if (this.gui && rect == this.lastRect && color == this.lastColor)
             return
 
         if !this.gui {
             this.gui := Gui("-Caption +ToolWindow -DPIScale +AlwaysOnTop +E0x20 +E0x08000000")
-            this.gui.BackColor := "0078D7"
+            this.lastColor := ""
+        }
+        if (color != this.lastColor) {
+            this.gui.BackColor := color
+            this.lastColor := color
         }
         this.gui.Show("NA x" zone["x"] " y" zone["y"] " w" zone["w"] " h" zone["h"])
         try WinSetTransparent(110, this.gui.Hwnd)

@@ -201,6 +201,8 @@ const I18N = {
     col_pocketWindowBorder_desc: "Цвет рамки вокруг окон, находящихся в кармане",
     col_pocketBorderWidth: "Толщина рамки окон кармана",
     col_pocketBorderWidth_desc: "Толщина линии рамки окон в кармане (px)",
+    col_snapPreview: "Подсветка прилипания к краям (Aero Snap)",
+    col_snapPreview_desc: "Цвет области предпросмотра при перетаскивании окна к краю или углу экрана",
 
     groupOsdDesign: "Дизайн плашек уведомлений (OSD)",
     osdPreview: "Предпросмотр",
@@ -449,6 +451,8 @@ const I18N = {
     col_pocketWindowBorder_desc: "Border drawn around windows in pocket",
     col_pocketBorderWidth: "Pocket Border Thickness",
     col_pocketBorderWidth_desc: "Width of highlight border around pocketed windows (px)",
+    col_snapPreview: "Edge Snapping Highlight (Aero Snap)",
+    col_snapPreview_desc: "Preview overlay color when dragging a window to a screen edge or corner",
 
     groupOsdDesign: "Workspace Switch Notification Design (OSD)",
     osdPreview: "Preview",

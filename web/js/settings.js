@@ -404,6 +404,7 @@ function syncFormValues() {
   if (elDragPulseWidth) elDragPulseWidth.value = currentConfig.appearance.colors.windowDragPulseWidth || 3;
   syncColorControl("appearance.colors.pocketWindowBorder", "col_pocketWindowBorder", "text_col_pocketBorder", "box_col_pocketBorder");
   document.getElementById("app_pocketBorderWidth").value = currentConfig.appearance.colors.pocketBorderWidth;
+  syncColorControl("appearance.colors.snapPreview", "col_snapPreview", "text_col_snapPreview", "box_col_snapPreview");
 
   syncColorControl("appearance.osd.backgroundColor", "col_osd_bgColor", "text_osd_bgColor", "box_osd_bgColor");
   const elOsdBgOpacity = document.getElementById("app_osd_bgOpacity");

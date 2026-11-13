@@ -108,6 +108,22 @@ AssertTrue("snap enabled string true", WindowMover.SnapEnabled())
 SetSnapEnabled("false")
 AssertTrue("snap enabled string false", !WindowMover.SnapEnabled())
 
+SetSnapPreviewColor(value) {
+    ConfigManager.configData := Map("appearance", Map("colors", Map("snapPreview", value)))
+}
+
+ConfigManager.configData := Map()
+AssertEq("snap preview color default", SnapPreview.ColorHex(), "0078D7")
+
+SetSnapPreviewColor("#ff5500")
+AssertEq("snap preview color strips hash and uppercases", SnapPreview.ColorHex(), "FF5500")
+
+SetSnapPreviewColor("12ab34")
+AssertEq("snap preview color accepts bare hex", SnapPreview.ColorHex(), "12AB34")
+
+SetSnapPreviewColor("not-a-color")
+AssertEq("snap preview color falls back on invalid", SnapPreview.ColorHex(), "0078D7")
+
 ; ------------------------------------------------------------------ Get paths
 
 ConfigManager.configData := Map("general", Map("windowMover", Map("safeZone", 12)))
@@ -295,6 +311,7 @@ AssertTrue("defaults have no legacy altTab", !defaults.Has("altTab"))
 AssertEq("visibleHeight lives in general", defaults["general"]["titleBar"]["visibleHeight"], 40)
 AssertTrue("keyboard step default", defaults["general"]["windowMover"]["keyboardStep"] == 20)
 AssertTrue("snap enabled default is true", defaults["general"]["windowMover"]["snapEnabled"] == true)
+AssertEq("snap preview default color is blue", defaults["appearance"]["colors"]["snapPreview"], "#0078D7")
 AssertTrue("autostart default is off", !defaults["general"]["autostart"]["enabled"])
 
 keyboardActions := [
@@ -316,6 +333,8 @@ for actionKey in keyboardActions
 
 settingsHtml := FileRead(A_ScriptDir "\..\web\settings.html", "UTF-8")
 AssertTrue("settings expose the snap toggle control", InStr(settingsHtml, 'id="gen_wm_snapEnabled"') > 0)
+AssertTrue("settings expose the snap preview color picker", InStr(settingsHtml, 'id="col_snapPreview"') > 0)
+AssertTrue("settings expose the snap preview hex input", InStr(settingsHtml, 'id="text_col_snapPreview"') > 0)
 
 ; ------------------------------------------------------------- Autostart XML
 
@@ -360,6 +379,7 @@ for key in ["profileAlreadyExists", "defaultProfileName", "groupHotkeysSys",
             "settingsImport", "settingsExported", "settingsImportFailed",
             "hotkeyConflictBadge", "hotkeyConflictsSummary",
             "windowMoverSnapEnabled", "windowMoverSnapEnabled_desc",
+            "col_snapPreview", "col_snapPreview_desc",
             "act_window_move_left", "act_window_move_right", "act_window_move_up",
             "act_window_move_down", "act_window_resize_wider", "act_window_resize_narrower",
             "act_window_resize_taller", "act_window_resize_shorter",

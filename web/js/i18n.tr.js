@@ -180,6 +180,8 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder_desc": "Cepteki pencerelerin çevresine çizilen kenarlık",
     "col_pocketBorderWidth": "Cep kenarlık kalınlığı",
     "col_pocketBorderWidth_desc": "Cepteki pencerelerin vurgu kenarlığı genişliği (px)",
+    "col_snapPreview": "Kenara Yaslama Vurgusu (Aero Snap)",
+    "col_snapPreview_desc": "Pencereyi ekran kenarına veya köşesine sürüklerken gösterilen önizleme rengi",
     "groupOsdDesign": "Çalışma Alanı Bildirim Tasarımı (OSD)",
     "osdPreview": "Önizleme",
     "osdPreview_desc": "Ekranda göstermek için bir rozete tıklayın",

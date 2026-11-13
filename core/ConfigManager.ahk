@@ -124,7 +124,8 @@ class ConfigManager {
                     "windowDragPulse", "#0078D7",
                     "windowDragPulseWidth", 3,
                     "pocketWindowBorder", "#FFDB58",
-                    "pocketBorderWidth", 2
+                    "pocketBorderWidth", 2,
+                    "snapPreview", "#0078D7"
                 ),
                 "overview", Map(
                     "design", "default",

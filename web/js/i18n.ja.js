@@ -180,6 +180,8 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder_desc": "ポケット内のウィンドウの周囲に描画する枠",
     "col_pocketBorderWidth": "ポケット枠の太さ",
     "col_pocketBorderWidth_desc": "ポケット内ウィンドウの強調枠の幅 (px)",
+    "col_snapPreview": "端スナップのハイライト (Aero Snap)",
+    "col_snapPreview_desc": "ウィンドウを画面の端や角にドラッグしたときのプレビュー領域の色",
     "groupOsdDesign": "ワークスペース切替通知のデザイン (OSD)",
     "osdPreview": "プレビュー",
     "osdPreview_desc": "バッジをクリックすると画面に表示されます",

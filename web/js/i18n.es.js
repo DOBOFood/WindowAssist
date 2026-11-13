@@ -180,6 +180,8 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder_desc": "Borde dibujado alrededor de las ventanas en Pocket",
     "col_pocketBorderWidth": "Grosor del borde de Pocket",
     "col_pocketBorderWidth_desc": "Ancho del borde de resaltado de las ventanas en Pocket (px)",
+    "col_snapPreview": "Resaltado al acoplar a los bordes (Aero Snap)",
+    "col_snapPreview_desc": "Color de la vista previa al arrastrar una ventana a un borde o esquina de la pantalla",
     "groupOsdDesign": "Diseño de notificaciones de cambio (OSD)",
     "osdPreview": "Vista previa",
     "osdPreview_desc": "Haz clic en una insignia para mostrarla en pantalla",

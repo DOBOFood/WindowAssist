@@ -180,6 +180,8 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder_desc": "Bordo disegnato attorno alle finestre nel Pocket",
     "col_pocketBorderWidth": "Spessore del bordo del Pocket",
     "col_pocketBorderWidth_desc": "Larghezza del bordo di evidenziazione delle finestre nel Pocket (px)",
+    "col_snapPreview": "Evidenziazione aggancio ai bordi (Aero Snap)",
+    "col_snapPreview_desc": "Colore dell'anteprima quando si trascina una finestra verso un bordo o un angolo dello schermo",
     "groupOsdDesign": "Aspetto notifiche cambio area (OSD)",
     "osdPreview": "Anteprima",
     "osdPreview_desc": "Fai clic su un badge per mostrarlo sullo schermo",

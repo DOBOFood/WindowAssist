@@ -180,6 +180,8 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder_desc": "Bordure dessinée autour des fenêtres du Pocket",
     "col_pocketBorderWidth": "Épaisseur de la bordure du Pocket",
     "col_pocketBorderWidth_desc": "Largeur de la bordure de surbrillance des fenêtres du Pocket (px)",
+    "col_snapPreview": "Surbrillance d'ancrage aux bords (Aero Snap)",
+    "col_snapPreview_desc": "Couleur de l'aperçu lors du glissement d'une fenêtre vers un bord ou un coin de l'écran",
     "groupOsdDesign": "Style des notifications de bureau (OSD)",
     "osdPreview": "Aperçu",
     "osdPreview_desc": "Cliquez sur un badge pour l'afficher à l'écran",

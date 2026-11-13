@@ -180,6 +180,8 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder_desc": "포켓에 있는 창 주위에 그리는 테두리",
     "col_pocketBorderWidth": "포켓 테두리 두께",
     "col_pocketBorderWidth_desc": "포켓 창의 강조 테두리 너비 (px)",
+    "col_snapPreview": "가장자리 맞춤 강조 색상 (Aero Snap)",
+    "col_snapPreview_desc": "창을 화면 가장자리나 모서리로 끌 때 표시되는 미리보기 영역 색상",
     "groupOsdDesign": "작업 공간 전환 알림 디자인 (OSD)",
     "osdPreview": "미리 보기",
     "osdPreview_desc": "배지를 클릭하면 화면에 표시됩니다",

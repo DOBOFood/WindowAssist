@@ -8,6 +8,7 @@ const DEFAULT_CONFIG = {
       "pocketBorderWidth": 2,
       "pocketTheme": "#FFDB58",
       "pocketWindowBorder": "#FFDB58",
+      "snapPreview": "#0078D7",
       "windowDragPulse": "#0078D7",
       "windowDragPulseWidth": 3,
       "workspaceBorderHover": "#0078D7"

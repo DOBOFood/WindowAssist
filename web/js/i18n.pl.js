@@ -180,6 +180,8 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder_desc": "Obramowanie rysowane wokół okien w kieszeni",
     "col_pocketBorderWidth": "Grubość obramowania kieszeni",
     "col_pocketBorderWidth_desc": "Szerokość obramowania okien w kieszeni (px)",
+    "col_snapPreview": "Podświetlenie przyciągania do krawędzi (Aero Snap)",
+    "col_snapPreview_desc": "Kolor podglądu podczas przeciągania okna do krawędzi lub narożnika ekranu",
     "groupOsdDesign": "Wygląd powiadomień przełączania (OSD)",
     "osdPreview": "Podgląd",
     "osdPreview_desc": "Kliknij plakietkę, aby wyświetlić ją na ekranie",

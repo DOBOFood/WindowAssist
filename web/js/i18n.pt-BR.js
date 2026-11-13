@@ -180,6 +180,8 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder_desc": "Borda desenhada ao redor das janelas no Pocket",
     "col_pocketBorderWidth": "Espessura da borda do Pocket",
     "col_pocketBorderWidth_desc": "Largura da borda de destaque das janelas no Pocket (px)",
+    "col_snapPreview": "Destaque do ajuste nas bordas (Aero Snap)",
+    "col_snapPreview_desc": "Cor da pré-visualização ao arrastar uma janela para a borda ou canto da tela",
     "groupOsdDesign": "Visual das notificações de troca (OSD)",
     "osdPreview": "Pré-visualização",
     "osdPreview_desc": "Clique em um selo para exibi-lo na tela",
