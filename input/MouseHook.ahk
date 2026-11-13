@@ -12,7 +12,7 @@ class MouseHook {
     if !mHwnd
         return
 
-    if IsTaskbarOrPreviewHwnd(mHwnd, mX, mY) {
+    if (!OverviewController.isOpen && IsTaskbarOrPreviewHwnd(mHwnd, mX, mY)) {
         lastTaskbarClickTime := A_TickCount
     }
 
@@ -29,7 +29,7 @@ class MouseHook {
     if !mHwnd
         return
 
-    if IsTaskbarOrPreviewHwnd(mHwnd, mX, mY) {
+    if (!OverviewController.isOpen && IsTaskbarOrPreviewHwnd(mHwnd, mX, mY)) {
         lastTaskbarClickTime := A_TickCount
     }
 }

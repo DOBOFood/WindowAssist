@@ -209,23 +209,22 @@ class OverviewController {
         else if (action == "SWITCH_WORKSPACE") {
             targetWs := Integer(data["targetWs"])
             monIdx := this.currentMon ? this.currentMon : GetCurrentTargetMonitor()
-            this.Close()
-            SwitchWorkspace(monIdx, targetWs)
+            SwitchWorkspace(monIdx, targetWs, 0, true)
         }
         else if (action == "SWITCH_TO_WINDOW") {
             hwnd := Integer(data["hwnd"])
-            this.Close()
             if WinExist("ahk_id " hwnd) {
                 if PocketManager.IsInPocket(hwnd) {
+                    this.Close()
                     PocketManager.ActivatePocketWindow(hwnd)
+                } else if wsWindows.Has(hwnd) {
+                    info := wsWindows[hwnd]
+                    SwitchWorkspace(info.mon, info.ws, hwnd, true)
                 } else {
-                    if wsWindows.Has(hwnd) {
-                        info := wsWindows[hwnd]
-                        if (currentWorkspaces[info.mon] != info.ws)
-                            SwitchWorkspace(info.mon, info.ws)
-                    }
-                    ForceActivateWindow(hwnd)
+                    ActivateAndCloseOverview(hwnd)
                 }
+            } else {
+                this.Close()
             }
         }
         else if (action == "REMOVE_FROM_POCKET") {

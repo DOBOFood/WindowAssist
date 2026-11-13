@@ -386,10 +386,16 @@ HandleWindowActivation(rootHwnd, isCreated := false, originalHwnd := 0) {
     targetWs  := info.ws
     curWs     := currentWorkspaces[targetMon]
 
+    fg := DllCall("GetForegroundWindow", "ptr")
     isTaskbarClick := IsTaskbarActivation()
 
     if (curWs != targetWs) {
         if (!isTaskbarClick) {
+            if (OverviewController.isOpen)
+                return
+            fgRoot := fg ? GetRootManagedWindow(fg) : 0
+            if (fgRoot && (PocketManager.IsInPocket(fgRoot) || (wsWindows.Has(fgRoot) && wsWindows[fgRoot].mon == targetMon && wsWindows[fgRoot].ws == curWs && !wsWindows[fgRoot].isOffscreen)))
+                return
             if !ActivateTopWindowOnWorkspace(targetMon, curWs)
                 SafeDesktopFocus()
             return
@@ -421,6 +427,11 @@ HandleWindowActivation(rootHwnd, isCreated := false, originalHwnd := 0) {
     } else {
         style := WinGetStyle("ahk_id " rootHwnd)
         if (style & 0x20000000) ; WS_MINIMIZE
+            return
+        if (OverviewController.isOpen)
+            return
+        ; Ignore stale activation events if foreground already moved to another window
+        if (!fg || !IsWindowOrChildOf(fg, rootHwnd))
             return
     }
 
@@ -454,7 +465,7 @@ HandleWindowActivation(rootHwnd, isCreated := false, originalHwnd := 0) {
         targetToActivate := GetTopActiveWindow(rootHwnd)
     }
 
-    if (fg != targetToActivate) {
+    if (isTaskbarClick && fg != targetToActivate) {
         ForceActivateWindow(targetToActivate)
     }
 
@@ -616,7 +627,34 @@ GetWindowMonitor(hwnd) {
     return 1
 }
 
-SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
+RestoreMinimizedIfNeeded(hwnd) {
+    global wsWindows
+    try {
+        style := WinGetStyle("ahk_id " hwnd)
+        if (style & 0x20000000) { ; WS_MINIMIZE
+            rootH := GetRootManagedWindow(hwnd)
+            isMax := (rootH && wsWindows.Has(rootH)) ? wsWindows[rootH].isMax : false
+            if (isMax)
+                DllCall("ShowWindowAsync", "ptr", hwnd, "int", 3) ; SW_MAXIMIZE
+            else
+                DllCall("ShowWindowAsync", "ptr", hwnd, "int", 9) ; SW_RESTORE
+        }
+    }
+}
+
+ActivateAndCloseOverview(targetHwnd := 0) {
+    if (targetHwnd && WinExist("ahk_id " targetHwnd))
+        ForceActivateWindow(targetHwnd)
+    else
+        SafeDesktopFocus()
+
+    OverviewController.Close()
+
+    if (targetHwnd && WinExist("ahk_id " targetHwnd) && DllCall("GetForegroundWindow", "ptr") != targetHwnd)
+        ForceActivateWindow(targetHwnd)
+}
+
+SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0, closeOverview := false) {
     global isSwitchingWorkspace, lastSwitchTime, maxWorkspacesPerMon, currentWorkspaces, wsWindows, desktopStates
     ErrorLogger.Record("switch workspace mon=" targetMon " ws=" targetWs)
     isSwitchingWorkspace := true
@@ -625,11 +663,13 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
 
     maxWs := maxWorkspacesPerMon.Has(targetMon) ? maxWorkspacesPerMon[targetMon] : 6
     if (targetWs < 1 || targetWs > maxWs) {
+        if (closeOverview)
+            OverviewController.Close()
         isSwitchingWorkspace := false
         return
     }
 
-    if (OverviewController.isOpen && OverviewController.currentMon != targetMon)
+    if (!closeOverview && OverviewController.isOpen && OverviewController.currentMon != targetMon)
         OverviewController.MoveToMonitor(targetMon)
 
     oldWs := currentWorkspaces[targetMon]
@@ -639,8 +679,14 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
                 SetWindowVisibility(preferredHwnd, true)
                 wsWindows[preferredHwnd].isOffscreen := false
             }
+            RestoreMinimizedIfNeeded(preferredHwnd)
             target := GetTopActiveWindow(preferredHwnd)
-            ForceActivateWindow(target)
+            if (closeOverview)
+                ActivateAndCloseOverview(target)
+            else if (!OverviewController.isOpen)
+                ForceActivateWindow(target)
+        } else if (closeOverview) {
+            ActivateAndCloseOverview(FindTopWindowOnWorkspace(targetMon, targetWs))
         }
         ShowOSD(targetWs)
         PocketManager.ApplyLayerHierarchy()
@@ -650,11 +696,13 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
 
     currentWorkspaces[targetMon] := targetWs
 
-    activeHwnd := 0
-    try activeHwnd := WinGetID("A")
-    if (activeHwnd && wsWindows.Has(activeHwnd)) {
-        if (wsWindows[activeHwnd].mon == targetMon && wsWindows[activeHwnd].ws == oldWs)
-            SafeDesktopFocus()
+    if (!closeOverview && !OverviewController.isOpen) {
+        activeHwnd := 0
+        try activeHwnd := WinGetID("A")
+        if (activeHwnd && wsWindows.Has(activeHwnd)) {
+            if (wsWindows[activeHwnd].mon == targetMon && wsWindows[activeHwnd].ws == oldWs)
+                SafeDesktopFocus()
+        }
     }
     
     try {
@@ -687,20 +735,14 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0) {
         }
 
         if (preferredHwnd && WinExist("ahk_id " preferredHwnd)) {
-            try {
-                style := WinGetStyle("ahk_id " preferredHwnd)
-                if (style & 0x20000000) { ; WS_MINIMIZE
-                    rootH := GetRootManagedWindow(preferredHwnd)
-                    isMax := (rootH && wsWindows.Has(rootH)) ? wsWindows[rootH].isMax : false
-                    if (isMax)
-                        DllCall("ShowWindowAsync", "ptr", preferredHwnd, "int", 3) ; SW_MAXIMIZE
-                    else
-                        DllCall("ShowWindowAsync", "ptr", preferredHwnd, "int", 9) ; SW_RESTORE
-                }
-            }
+            RestoreMinimizedIfNeeded(preferredHwnd)
             target := GetTopActiveWindow(preferredHwnd)
-            if (!OverviewController.isOpen)
+            if (closeOverview)
+                ActivateAndCloseOverview(target)
+            else if (!OverviewController.isOpen)
                 ForceActivateWindow(target)
+        } else if (closeOverview) {
+            ActivateAndCloseOverview(FindTopWindowOnWorkspace(targetMon, targetWs))
         } else if !OverviewController.isOpen && !ActivateTopWindowOnWorkspace(targetMon, targetWs) {
             SafeDesktopFocus()
         }
@@ -1081,17 +1123,24 @@ MoveActiveWindowDelta(delta) {
         MoveActiveWindowTo(newWs)
 }
 
-ActivateTopWindowOnWorkspace(monIdx, wsIdx) {
+FindTopWindowOnWorkspace(monIdx, wsIdx) {
     global wsWindows
     for hwnd in WinGetList() {
         if wsWindows.Has(hwnd) {
             info := wsWindows[hwnd]
             if (info.mon == monIdx && info.ws == wsIdx && !info.isOffscreen) {
-                target := GetTopActiveWindow(hwnd)
-                ForceActivateWindow(target)
-                return true
+                return GetTopActiveWindow(hwnd)
             }
         }
+    }
+    return 0
+}
+
+ActivateTopWindowOnWorkspace(monIdx, wsIdx) {
+    target := FindTopWindowOnWorkspace(monIdx, wsIdx)
+    if (target) {
+        ForceActivateWindow(target)
+        return true
     }
     return false
 }
