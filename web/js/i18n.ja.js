@@ -181,6 +181,21 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder": "ポケット内ウィンドウの枠",
     "col_pocketWindowBorder_desc": "ポケット内のウィンドウの周囲に描画する枠",
     "col_pocketBorderWidth": "ポケット枠の太さ",
-    "col_pocketBorderWidth_desc": "ポケット内ウィンドウの強調枠の幅 (px)"
+    "col_pocketBorderWidth_desc": "ポケット内ウィンドウの強調枠の幅 (px)",
+    "groupOsdDesign": "ワークスペース切替通知のデザイン (OSD)",
+    "osdPreview": "プレビュー",
+    "osdPreview_desc": "バッジをクリックすると画面に表示されます",
+    "osdBgColor": "背景色",
+    "osdBgColor_desc": "ワークスペース切替・ピン留め通知の塗りつぶし色",
+    "osdBgOpacity": "背景の不透明度 (%)",
+    "osdBgOpacity_desc": "0%（透明な背景）から 100%（不透明）まで",
+    "osdTextColor": "文字とアイコンの色",
+    "osdTextColor_desc": "ワークスペース番号とピン留めアイコンの色",
+    "osdBorderTransparent": "枠線を透明にする",
+    "osdBorderTransparent_desc": "通知バッジの枠線を非表示にします",
+    "osdBorderColor": "枠線の色",
+    "osdBorderColor_desc": "通知バッジの枠線の色",
+    "osdBorderWidth": "枠線の太さ (px)",
+    "osdBorderWidth_desc": "通知バッジの枠線の幅"
   }
 });

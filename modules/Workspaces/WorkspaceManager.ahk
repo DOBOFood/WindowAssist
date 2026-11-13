@@ -1179,8 +1179,7 @@ ToggleFloatingWindows() {
 
     EnsureTaskbarTopmost()
     PocketManager.ApplyLayerHierarchy()
-    if (newState)
-        ShowOSD(Chr(0x1F4CC))
+    ShowOSD(newState ? "__PINNED__" : "__UNPINNED__")
 }
 
 AlignWindowToDesktopState(hwnd, pushToBottom := false) {

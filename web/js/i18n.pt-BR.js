@@ -181,6 +181,21 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder": "Borda das janelas no Pocket",
     "col_pocketWindowBorder_desc": "Borda desenhada ao redor das janelas no Pocket",
     "col_pocketBorderWidth": "Espessura da borda do Pocket",
-    "col_pocketBorderWidth_desc": "Largura da borda de destaque das janelas no Pocket (px)"
+    "col_pocketBorderWidth_desc": "Largura da borda de destaque das janelas no Pocket (px)",
+    "groupOsdDesign": "Visual das notificações de troca (OSD)",
+    "osdPreview": "Pré-visualização",
+    "osdPreview_desc": "Clique em um selo para exibi-lo na tela",
+    "osdBgColor": "Cor de fundo",
+    "osdBgColor_desc": "Cor de preenchimento para notificações de área e fixação",
+    "osdBgOpacity": "Opacidade do fundo (%)",
+    "osdBgOpacity_desc": "De 0% (fundo transparente) a 100% (cor sólida)",
+    "osdTextColor": "Cor do texto e ícone",
+    "osdTextColor_desc": "Cor do número da área de trabalho e do ícone de fixação",
+    "osdBorderTransparent": "Borda transparente",
+    "osdBorderTransparent_desc": "Ocultar o contorno ao redor do selo de notificação",
+    "osdBorderColor": "Cor da borda",
+    "osdBorderColor_desc": "Cor do contorno ao redor do selo de notificação",
+    "osdBorderWidth": "Espessura da borda (px)",
+    "osdBorderWidth_desc": "Largura do contorno ao redor do selo de notificação"
   }
 });

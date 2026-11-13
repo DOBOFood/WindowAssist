@@ -181,6 +181,21 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder": "口袋窗口边框",
     "col_pocketWindowBorder_desc": "围绕口袋中窗口绘制的边框",
     "col_pocketBorderWidth": "口袋边框粗细",
-    "col_pocketBorderWidth_desc": "口袋中窗口高亮边框的宽度（px）"
+    "col_pocketBorderWidth_desc": "口袋中窗口高亮边框的宽度（px）",
+    "groupOsdDesign": "工作区切换通知样式 (OSD)",
+    "osdPreview": "预览",
+    "osdPreview_desc": "点击徽标即可在屏幕上预览显示",
+    "osdBgColor": "背景颜色",
+    "osdBgColor_desc": "工作区切换与置顶通知的填充颜色",
+    "osdBgOpacity": "背景不透明度 (%)",
+    "osdBgOpacity_desc": "从 0%（透明背景）到 100%（纯色）",
+    "osdTextColor": "文字与图标颜色",
+    "osdTextColor_desc": "工作区编号与置顶图标的颜色",
+    "osdBorderTransparent": "透明边框",
+    "osdBorderTransparent_desc": "隐藏通知徽标周围的边框",
+    "osdBorderColor": "边框颜色",
+    "osdBorderColor_desc": "通知徽标周围的边框颜色",
+    "osdBorderWidth": "边框粗细 (px)",
+    "osdBorderWidth_desc": "通知徽标周围边框的宽度"
   }
 });

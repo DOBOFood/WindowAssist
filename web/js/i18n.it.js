@@ -181,6 +181,21 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder": "Bordo delle finestre nel Pocket",
     "col_pocketWindowBorder_desc": "Bordo disegnato attorno alle finestre nel Pocket",
     "col_pocketBorderWidth": "Spessore del bordo del Pocket",
-    "col_pocketBorderWidth_desc": "Larghezza del bordo di evidenziazione delle finestre nel Pocket (px)"
+    "col_pocketBorderWidth_desc": "Larghezza del bordo di evidenziazione delle finestre nel Pocket (px)",
+    "groupOsdDesign": "Aspetto notifiche cambio area (OSD)",
+    "osdPreview": "Anteprima",
+    "osdPreview_desc": "Fai clic su un badge per mostrarlo sullo schermo",
+    "osdBgColor": "Colore di sfondo",
+    "osdBgColor_desc": "Colore di riempimento per notifiche di cambio area e blocco",
+    "osdBgOpacity": "Opacità sfondo (%)",
+    "osdBgOpacity_desc": "Da 0% (sfondo trasparente) a 100% (colore pieno)",
+    "osdTextColor": "Colore testo e icona",
+    "osdTextColor_desc": "Colore del numero dell'area e dell'icona di blocco",
+    "osdBorderTransparent": "Bordo trasparente",
+    "osdBorderTransparent_desc": "Nascondi il contorno intorno al badge di notifica",
+    "osdBorderColor": "Colore del bordo",
+    "osdBorderColor_desc": "Colore del contorno intorno al badge di notifica",
+    "osdBorderWidth": "Spessore del bordo (px)",
+    "osdBorderWidth_desc": "Larghezza del contorno intorno al badge di notifica"
   }
 });

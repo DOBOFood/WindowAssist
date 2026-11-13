@@ -181,6 +181,21 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder": "Cep penceresi kenarlığı",
     "col_pocketWindowBorder_desc": "Cepteki pencerelerin çevresine çizilen kenarlık",
     "col_pocketBorderWidth": "Cep kenarlık kalınlığı",
-    "col_pocketBorderWidth_desc": "Cepteki pencerelerin vurgu kenarlığı genişliği (px)"
+    "col_pocketBorderWidth_desc": "Cepteki pencerelerin vurgu kenarlığı genişliği (px)",
+    "groupOsdDesign": "Çalışma Alanı Bildirim Tasarımı (OSD)",
+    "osdPreview": "Önizleme",
+    "osdPreview_desc": "Ekranda göstermek için bir rozete tıklayın",
+    "osdBgColor": "Arka plan rengi",
+    "osdBgColor_desc": "Çalışma alanı geçiş ve sabitleme bildirimlerinin dolgu rengi",
+    "osdBgOpacity": "Arka plan opaklığı (%)",
+    "osdBgOpacity_desc": "%0 (saydam arka plan) ile %100 (düz renk) arası",
+    "osdTextColor": "Metin ve simge rengi",
+    "osdTextColor_desc": "Çalışma alanı numarası ve sabitleme simgesi rengi",
+    "osdBorderTransparent": "Saydam kenarlık",
+    "osdBorderTransparent_desc": "Bildirim rozetinin çevresindeki kenarlığı gizle",
+    "osdBorderColor": "Kenarlık rengi",
+    "osdBorderColor_desc": "Bildirim rozetinin çevresindeki kenarlık rengi",
+    "osdBorderWidth": "Kenarlık kalınlığı (px)",
+    "osdBorderWidth_desc": "Bildirim rozetinin çevresindeki kenarlık genişliği"
   }
 });

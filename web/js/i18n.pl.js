@@ -181,6 +181,21 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder": "Obramowanie okien w kieszeni",
     "col_pocketWindowBorder_desc": "Obramowanie rysowane wokół okien w kieszeni",
     "col_pocketBorderWidth": "Grubość obramowania kieszeni",
-    "col_pocketBorderWidth_desc": "Szerokość obramowania okien w kieszeni (px)"
+    "col_pocketBorderWidth_desc": "Szerokość obramowania okien w kieszeni (px)",
+    "groupOsdDesign": "Wygląd powiadomień przełączania (OSD)",
+    "osdPreview": "Podgląd",
+    "osdPreview_desc": "Kliknij plakietkę, aby wyświetlić ją na ekranie",
+    "osdBgColor": "Kolor tła",
+    "osdBgColor_desc": "Kolor wypełnienia powiadomień pulpitu i przypięcia",
+    "osdBgOpacity": "Krycie tła (%)",
+    "osdBgOpacity_desc": "Od 0% (przezroczyste tło) do 100% (jednolity kolor)",
+    "osdTextColor": "Kolor tekstu i ikony",
+    "osdTextColor_desc": "Kolor numeru pulpitu oraz ikony przypięcia",
+    "osdBorderTransparent": "Przezroczysta ramka",
+    "osdBorderTransparent_desc": "Ukryj obramowanie wokół plakietki powiadomienia",
+    "osdBorderColor": "Kolor ramki",
+    "osdBorderColor_desc": "Kolor obramowania wokół plakietki powiadomienia",
+    "osdBorderWidth": "Grubość ramki (px)",
+    "osdBorderWidth_desc": "Szerokość obramowania wokół plakietki powiadomienia"
   }
 });

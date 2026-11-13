@@ -181,6 +181,21 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder": "Bordure des fenêtres du Pocket",
     "col_pocketWindowBorder_desc": "Bordure dessinée autour des fenêtres du Pocket",
     "col_pocketBorderWidth": "Épaisseur de la bordure du Pocket",
-    "col_pocketBorderWidth_desc": "Largeur de la bordure de surbrillance des fenêtres du Pocket (px)"
+    "col_pocketBorderWidth_desc": "Largeur de la bordure de surbrillance des fenêtres du Pocket (px)",
+    "groupOsdDesign": "Style des notifications de bureau (OSD)",
+    "osdPreview": "Aperçu",
+    "osdPreview_desc": "Cliquez sur un badge pour l'afficher à l'écran",
+    "osdBgColor": "Couleur d'arrière-plan",
+    "osdBgColor_desc": "Couleur de fond des notifications de bureau et d'épinglage",
+    "osdBgOpacity": "Opacité de l'arrière-plan (%)",
+    "osdBgOpacity_desc": "De 0 % (fond transparent) à 100 % (couleur unie)",
+    "osdTextColor": "Couleur du texte et de l'icône",
+    "osdTextColor_desc": "Couleur du numéro de bureau et de l'icône d'épinglage",
+    "osdBorderTransparent": "Bordure transparente",
+    "osdBorderTransparent_desc": "Masquer le contour autour du badge de notification",
+    "osdBorderColor": "Couleur de bordure",
+    "osdBorderColor_desc": "Couleur du contour autour du badge de notification",
+    "osdBorderWidth": "Épaisseur de bordure (px)",
+    "osdBorderWidth_desc": "Largeur du contour autour du badge de notification"
   }
 });

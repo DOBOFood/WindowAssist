@@ -11,6 +11,14 @@ const DEFAULT_CONFIG = {
       "windowDragPulse": "#0078D7",
       "windowDragPulseWidth": 3,
       "workspaceBorderHover": "#0078D7"
+    },
+    "osd": {
+      "backgroundColor": "#1A1A1A",
+      "backgroundOpacity": 100,
+      "borderColor": "#3D3D3D",
+      "borderTransparent": 0,
+      "borderWidth": 1,
+      "textColor": "#FFFFFF"
     }
   },
   "configVersion": 2,

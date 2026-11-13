@@ -181,6 +181,21 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder": "Pocket-Fensterrahmen",
     "col_pocketWindowBorder_desc": "Rahmen um Fenster im Pocket",
     "col_pocketBorderWidth": "Pocket-Rahmenstärke",
-    "col_pocketBorderWidth_desc": "Breite des Hervorhebungsrahmens um Pocket-Fenster (px)"
+    "col_pocketBorderWidth_desc": "Breite des Hervorhebungsrahmens um Pocket-Fenster (px)",
+    "groupOsdDesign": "Design der Wechsel-Benachrichtigungen (OSD)",
+    "osdPreview": "Vorschau",
+    "osdPreview_desc": "Auf eine Plakette klicken, um sie auf dem Bildschirm anzuzeigen",
+    "osdBgColor": "Hintergrundfarbe",
+    "osdBgColor_desc": "Füllfarbe der Benachrichtigung beim Arbeitsbereichwechsel und Anheften",
+    "osdBgOpacity": "Hintergrund-Deckkraft (%)",
+    "osdBgOpacity_desc": "Von 0 % (transparenter Hintergrund) bis 100 % (deckend)",
+    "osdTextColor": "Text- und Symbolfarbe",
+    "osdTextColor_desc": "Farbe der Arbeitsbereichsnummer und des Anheften-Symbols",
+    "osdBorderTransparent": "Transparenter Rahmen",
+    "osdBorderTransparent_desc": "Rahmen um die Benachrichtigungsplakette ausblenden",
+    "osdBorderColor": "Rahmenfarbe",
+    "osdBorderColor_desc": "Farbe des Rahmens um die Benachrichtigungsplakette",
+    "osdBorderWidth": "Rahmenstärke (px)",
+    "osdBorderWidth_desc": "Dicke der Rahmenlinie um die Benachrichtigungsplakette"
   }
 });

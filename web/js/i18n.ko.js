@@ -181,6 +181,21 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder": "포켓 창 테두리",
     "col_pocketWindowBorder_desc": "포켓에 있는 창 주위에 그리는 테두리",
     "col_pocketBorderWidth": "포켓 테두리 두께",
-    "col_pocketBorderWidth_desc": "포켓 창의 강조 테두리 너비 (px)"
+    "col_pocketBorderWidth_desc": "포켓 창의 강조 테두리 너비 (px)",
+    "groupOsdDesign": "작업 공간 전환 알림 디자인 (OSD)",
+    "osdPreview": "미리 보기",
+    "osdPreview_desc": "배지를 클릭하면 화면에 표시됩니다",
+    "osdBgColor": "배경색",
+    "osdBgColor_desc": "작업 공간 전환 및 고정 알림의 채우기 색상",
+    "osdBgOpacity": "배경 불투명도 (%)",
+    "osdBgOpacity_desc": "0%(투명 배경)에서 100%(단색)까지",
+    "osdTextColor": "텍스트 및 아이콘 색상",
+    "osdTextColor_desc": "작업 공간 번호 및 고정 아이콘 색상",
+    "osdBorderTransparent": "투명 테두리",
+    "osdBorderTransparent_desc": "알림 배지 주위의 테두리를 숨깁니다",
+    "osdBorderColor": "테두리 색상",
+    "osdBorderColor_desc": "알림 배지 주위의 테두리 색상",
+    "osdBorderWidth": "테두리 두께 (px)",
+    "osdBorderWidth_desc": "알림 배지 주위의 테두리 너비"
   }
 });

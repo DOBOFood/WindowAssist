@@ -202,7 +202,23 @@ const I18N = {
     col_pocketWindowBorder: "Рамка окон кармана",
     col_pocketWindowBorder_desc: "Цвет рамки вокруг окон, находящихся в кармане",
     col_pocketBorderWidth: "Толщина рамки окон кармана",
-    col_pocketBorderWidth_desc: "Толщина линии рамки окон в кармане (px)"
+    col_pocketBorderWidth_desc: "Толщина линии рамки окон в кармане (px)",
+
+    groupOsdDesign: "Дизайн плашек уведомлений (OSD)",
+    osdPreview: "Предпросмотр",
+    osdPreview_desc: "Нажмите на плашку, чтобы показать её на экране",
+    osdBgColor: "Цвет фона плашки",
+    osdBgColor_desc: "Цвет заливки уведомления при переключении стола и закреплении",
+    osdBgOpacity: "Непрозрачность фона (%)",
+    osdBgOpacity_desc: "От 0% (прозрачный фон) до 100% (сплошной цвет)",
+    osdTextColor: "Цвет текста и значка",
+    osdTextColor_desc: "Цвет номера рабочего стола и значка закрепления",
+    osdBorderTransparent: "Прозрачная обводка",
+    osdBorderTransparent_desc: "Убрать рамку вокруг плашки уведомления",
+    osdBorderColor: "Цвет обводки",
+    osdBorderColor_desc: "Цвет рамки вокруг плашки уведомления",
+    osdBorderWidth: "Толщина обводки (px)",
+    osdBorderWidth_desc: "Толщина линии рамки вокруг плашки уведомления"
   },
 
   en: {
@@ -408,7 +424,23 @@ const I18N = {
     col_pocketWindowBorder: "Pocket Window Border",
     col_pocketWindowBorder_desc: "Border drawn around windows in pocket",
     col_pocketBorderWidth: "Pocket Border Thickness",
-    col_pocketBorderWidth_desc: "Width of highlight border around pocketed windows (px)"
+    col_pocketBorderWidth_desc: "Width of highlight border around pocketed windows (px)",
+
+    groupOsdDesign: "Workspace Switch Notification Design (OSD)",
+    osdPreview: "Preview",
+    osdPreview_desc: "Click a badge to show it on screen",
+    osdBgColor: "Badge Background Color",
+    osdBgColor_desc: "Fill color of workspace switch and pin notifications",
+    osdBgOpacity: "Background Opacity (%)",
+    osdBgOpacity_desc: "From 0% (transparent background) to 100% (solid color)",
+    osdTextColor: "Text & Icon Color",
+    osdTextColor_desc: "Color of workspace number and pin indicator icon",
+    osdBorderTransparent: "Transparent Border",
+    osdBorderTransparent_desc: "Hide the outline around the notification badge",
+    osdBorderColor: "Border Color",
+    osdBorderColor_desc: "Outline color around the notification badge",
+    osdBorderWidth: "Border Thickness (px)",
+    osdBorderWidth_desc: "Width of the outline around the notification badge"
   }
 };
 

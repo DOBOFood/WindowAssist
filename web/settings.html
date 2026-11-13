@@ -450,6 +450,131 @@
               </div>
             </div>
           </div>
+
+          <!-- OSD Notification Design -->
+          <div class="settings-group">
+            <div class="group-title" data-i18n="groupOsdDesign">Дизайн плашек уведомлений (OSD)</div>
+            <div class="group-cards">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="osdPreview">Предпросмотр</div>
+                  <div class="setting-desc" data-i18n="osdPreview_desc">Нажмите на плашку, чтобы показать её на экране</div>
+                </div>
+                <div class="setting-control-group">
+                  <div class="osd-preview-strip" id="osd-preview-strip">
+                    <button type="button" class="osd-preview-pill" onclick="previewOsd('1')" title="1">1</button>
+                    <button type="button" class="osd-preview-pill" onclick="previewOsd('__PINNED__')" title="Pinned">
+                      <svg class="osd-pin-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/>
+                        <circle cx="12" cy="12" r="3.2" fill="currentColor"/>
+                      </svg>
+                    </button>
+                    <button type="button" class="osd-preview-pill" onclick="previewOsd('__UNPINNED__')" title="Unpinned">
+                      <svg class="osd-pin-svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="osdBgColor">Цвет фона плашки</div>
+                  <div class="setting-desc" data-i18n="osdBgColor_desc">Цвет заливки уведомления при переключении стола и закреплении</div>
+                </div>
+                <div class="setting-control-group">
+                  <div class="color-control">
+                    <div class="color-preview-box" id="box_osd_bgColor">
+                      <input type="color" id="col_osd_bgColor" oninput="onOsdColorLive('appearance.osd.backgroundColor', this.value)" onchange="onColorInput('appearance.osd.backgroundColor', this.value)">
+                    </div>
+                    <input type="text" id="text_osd_bgColor" class="color-hex-text" maxlength="7" onchange="onHexTextInput('appearance.osd.backgroundColor', this.value)">
+                  </div>
+                  <button class="btn-reset" onclick="resetField('appearance.osd.backgroundColor')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="osdBgOpacity">Непрозрачность фона (%)</div>
+                  <div class="setting-desc" data-i18n="osdBgOpacity_desc">От 0% (прозрачный фон) до 100% (сплошной цвет)</div>
+                </div>
+                <div class="setting-control-group">
+                  <input type="number" id="app_osd_bgOpacity" class="input-number" min="0" max="100" step="5" onchange="onOsdNumberChange('appearance.osd.backgroundOpacity', this.value, 0, 100, 100)">
+                  <button class="btn-reset" onclick="resetField('appearance.osd.backgroundOpacity')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="osdTextColor">Цвет текста и значка</div>
+                  <div class="setting-desc" data-i18n="osdTextColor_desc">Цвет номера рабочего стола и значка закрепления</div>
+                </div>
+                <div class="setting-control-group">
+                  <div class="color-control">
+                    <div class="color-preview-box" id="box_osd_textColor">
+                      <input type="color" id="col_osd_textColor" oninput="onOsdColorLive('appearance.osd.textColor', this.value)" onchange="onColorInput('appearance.osd.textColor', this.value)">
+                    </div>
+                    <input type="text" id="text_osd_textColor" class="color-hex-text" maxlength="7" onchange="onHexTextInput('appearance.osd.textColor', this.value)">
+                  </div>
+                  <button class="btn-reset" onclick="resetField('appearance.osd.textColor')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="osdBorderTransparent">Прозрачная обводка</div>
+                  <div class="setting-desc" data-i18n="osdBorderTransparent_desc">Убрать рамку вокруг плашки уведомления</div>
+                </div>
+                <div class="setting-control-group">
+                  <label class="switch">
+                    <input type="checkbox" id="app_osd_borderTransparent" onchange="onOsdBorderTransparentChange(this.checked)">
+                    <span class="slider"></span>
+                  </label>
+                  <button class="btn-reset" onclick="resetField('appearance.osd.borderTransparent')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row" id="row_osd_borderColor">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="osdBorderColor">Цвет обводки</div>
+                  <div class="setting-desc" data-i18n="osdBorderColor_desc">Цвет рамки вокруг плашки уведомления</div>
+                </div>
+                <div class="setting-control-group">
+                  <div class="color-control">
+                    <div class="color-preview-box" id="box_osd_borderColor">
+                      <input type="color" id="col_osd_borderColor" oninput="onOsdColorLive('appearance.osd.borderColor', this.value)" onchange="onColorInput('appearance.osd.borderColor', this.value)">
+                    </div>
+                    <input type="text" id="text_osd_borderColor" class="color-hex-text" maxlength="7" onchange="onHexTextInput('appearance.osd.borderColor', this.value)">
+                  </div>
+                  <button class="btn-reset" onclick="resetField('appearance.osd.borderColor')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row" id="row_osd_borderWidth">
+                <div class="setting-info">
+                  <div class="setting-title" data-i18n="osdBorderWidth">Толщина обводки (px)</div>
+                  <div class="setting-desc" data-i18n="osdBorderWidth_desc">Толщина линии рамки вокруг плашки уведомления</div>
+                </div>
+                <div class="setting-control-group">
+                  <input type="number" id="app_osd_borderWidth" class="input-number" min="1" max="10" step="1" onchange="onOsdNumberChange('appearance.osd.borderWidth', this.value, 1, 10, 1)">
+                  <button class="btn-reset" onclick="resetField('appearance.osd.borderWidth')" title="Сбросить" data-i18n-title="resetFieldTooltip">
+                    <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
     </main>

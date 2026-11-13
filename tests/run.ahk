@@ -337,7 +337,9 @@ for key in ["profileAlreadyExists", "defaultProfileName", "groupHotkeysSys",
             "windowMoverSnapMode", "snapMode_custom", "snapMode_native",
             "act_window_move_left", "act_window_move_right", "act_window_move_up",
             "act_window_move_down", "act_window_resize_wider", "act_window_resize_narrower",
-            "act_window_resize_taller", "act_window_resize_shorter"] {
+            "act_window_resize_taller", "act_window_resize_shorter",
+            "groupOsdDesign", "osdPreview", "osdBgColor", "osdBgOpacity",
+            "osdTextColor", "osdBorderTransparent", "osdBorderColor", "osdBorderWidth"] {
     count := CountText(i18nText, key ":")
     AssertEq("i18n key " key " exists in ru and en", count, 2)
 }
@@ -394,6 +396,68 @@ AssertTrue("settings CSS defines Windows 10 tone", InStr(settingsCss, 'html[data
 themeScript := FileRead(A_ScriptDir "\..\web\js\settings.js", "UTF-8")
 AssertTrue("settings JS applies the system theme", InStr(themeScript, "function applyTheme") > 0)
 AssertTrue("settings JS handles THEME messages", InStr(themeScript, 'msg.action === "THEME"') > 0)
+
+; ---------------------------------------------------------- OSD Style & Layout
+
+AssertEq("OSD hex normalizes lowercase", OsdRenderer.NormalizeHex("#ff8800"), "#FF8800")
+AssertEq("OSD hex adds missing hash", OsdRenderer.NormalizeHex("00aaee"), "#00AAEE")
+AssertEq("OSD hex falls back on invalid", OsdRenderer.NormalizeHex("bad", "#1A1A1A"), "#1A1A1A")
+AssertEq("OSD HexToArgb full opacity", OsdRenderer.HexToArgb("#1A1A1A", 255), 0xFF1A1A1A)
+AssertEq("OSD HexToArgb zero opacity", OsdRenderer.HexToArgb("#FFFFFF", 0), 0x00FFFFFF)
+AssertEq("OSD ClampInt clamps low", OsdRenderer.ClampInt(-5, 0, 100, 50), 0)
+AssertEq("OSD ClampInt clamps high", OsdRenderer.ClampInt(999, 1, 10, 1), 10)
+AssertEq("OSD ClampInt falls back on garbage", OsdRenderer.ClampInt("abc", 1, 10, 3), 3)
+
+ConfigManager.configData := Map()
+osdDef := OsdRenderer.ResolveStyle()
+AssertEq("OSD default bgColor", osdDef.bgColor, "#1A1A1A")
+AssertEq("OSD default bgOpacity", osdDef.bgOpacity, 100)
+AssertEq("OSD default textColor", osdDef.textColor, "#FFFFFF")
+AssertEq("OSD default borderTransparent", osdDef.borderTransparent ? 1 : 0, 0)
+AssertEq("OSD default borderColor", osdDef.borderColor, "#3D3D3D")
+AssertEq("OSD default borderWidth", osdDef.borderWidth, 1)
+
+ConfigManager.configData := Map(
+    "general", Map("osd", Map("fontSize", 20)),
+    "appearance", Map("osd", Map(
+        "backgroundColor", "#112233",
+        "backgroundOpacity", 75,
+        "textColor", "#AABBCC",
+        "borderTransparent", true,
+        "borderColor", "#445566",
+        "borderWidth", 4
+    ))
+)
+osdCustom := OsdRenderer.ResolveStyle()
+AssertEq("OSD custom fontSize", osdCustom.fontSize, 20)
+AssertEq("OSD custom bgColor", osdCustom.bgColor, "#112233")
+AssertEq("OSD custom bgOpacity", osdCustom.bgOpacity, 75)
+AssertEq("OSD custom textColor", osdCustom.textColor, "#AABBCC")
+AssertEq("OSD custom borderTransparent", osdCustom.borderTransparent ? 1 : 0, 1)
+AssertEq("OSD custom borderColor", osdCustom.borderColor, "#445566")
+AssertEq("OSD custom borderWidth", osdCustom.borderWidth, 4)
+
+OsdRenderer.EnsureGdiPlus()
+pinLayout := OsdRenderer.ComputeLayout("__PINNED__", osdDef, 96)
+AssertTrue("OSD pinned layout is icon", pinLayout.isIcon && pinLayout.isPin && !pinLayout.isUnpin)
+AssertTrue("OSD pinned layout has positive size", pinLayout.w > 0 && pinLayout.h > 0)
+
+unpinLayout := OsdRenderer.ComputeLayout("__UNPINNED__", osdDef, 96)
+AssertTrue("OSD unpinned layout is icon", unpinLayout.isIcon && !unpinLayout.isPin && unpinLayout.isUnpin)
+AssertEq("OSD unpinned matches pinned size", unpinLayout.w, pinLayout.w)
+AssertEq("OSD unpinned matches pinned height", unpinLayout.h, pinLayout.h)
+
+wsLayout := OsdRenderer.ComputeLayout("1", osdDef, 96)
+AssertTrue("OSD text layout is not icon", !wsLayout.isIcon)
+AssertTrue("OSD text layout has positive size", wsLayout.w > 0 && wsLayout.h > 0)
+OsdRenderer.Shutdown()
+
+settingsHtmlOsd := FileRead(A_ScriptDir "\..\web\settings.html", "UTF-8")
+for ctrlId in ["col_osd_bgColor", "app_osd_bgOpacity", "col_osd_textColor",
+               "app_osd_borderTransparent", "col_osd_borderColor", "app_osd_borderWidth",
+               "osd-preview-strip"] {
+    AssertTrue("settings expose OSD control " ctrlId, InStr(settingsHtmlOsd, 'id="' ctrlId '"') > 0)
+}
 
 ; ---------------------------------------------------------------- Languages
 

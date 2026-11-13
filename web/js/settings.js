@@ -158,7 +158,7 @@ function setPropertyByPath(obj, path, value) {
 }
 
 function sendToAhk(action, payload) {
-  if (action !== "SETTINGS_READY" && action !== "START_KEY_RECORDING" && action !== "STOP_KEY_RECORDING") {
+  if (action !== "SETTINGS_READY" && action !== "START_KEY_RECORDING" && action !== "STOP_KEY_RECORDING" && action !== "PREVIEW_OSD") {
     setSavingStatus(true);
     setTimeout(() => setSavingStatus(false), 250);
   }
@@ -360,9 +360,97 @@ function syncFormValues() {
   syncColorControl("appearance.colors.pocketWindowBorder", "col_pocketWindowBorder", "text_col_pocketBorder", "box_col_pocketBorder");
   document.getElementById("app_pocketBorderWidth").value = currentConfig.appearance.colors.pocketBorderWidth;
 
+  syncColorControl("appearance.osd.backgroundColor", "col_osd_bgColor", "text_osd_bgColor", "box_osd_bgColor");
+  const elOsdBgOpacity = document.getElementById("app_osd_bgOpacity");
+  if (elOsdBgOpacity) {
+    const op = getPropertyByPath(currentConfig, "appearance.osd.backgroundOpacity");
+    elOsdBgOpacity.value = (op !== undefined) ? op : 100;
+  }
+  syncColorControl("appearance.osd.textColor", "col_osd_textColor", "text_osd_textColor", "box_osd_textColor");
+  const elOsdBorderTrans = document.getElementById("app_osd_borderTransparent");
+  if (elOsdBorderTrans) elOsdBorderTrans.checked = !!getPropertyByPath(currentConfig, "appearance.osd.borderTransparent");
+  syncColorControl("appearance.osd.borderColor", "col_osd_borderColor", "text_osd_borderColor", "box_osd_borderColor");
+  const elOsdBorderWidth = document.getElementById("app_osd_borderWidth");
+  if (elOsdBorderWidth) {
+    const bw = getPropertyByPath(currentConfig, "appearance.osd.borderWidth");
+    elOsdBorderWidth.value = (bw !== undefined) ? bw : 1;
+  }
+  updateOsdBorderControlsState();
+  updateOsdPreview();
+
   syncProfileSelect();
   renderHotkeysList();
   updateResetButtonsStatus();
+}
+
+function onOsdColorLive(configPath, hex) {
+  setPropertyByPath(currentConfig, configPath, hex);
+  if (configPath === "appearance.osd.backgroundColor") {
+    syncColorControl(configPath, "col_osd_bgColor", "text_osd_bgColor", "box_osd_bgColor");
+  } else if (configPath === "appearance.osd.textColor") {
+    syncColorControl(configPath, "col_osd_textColor", "text_osd_textColor", "box_osd_textColor");
+  } else if (configPath === "appearance.osd.borderColor") {
+    syncColorControl(configPath, "col_osd_borderColor", "text_osd_borderColor", "box_osd_borderColor");
+  }
+  updateOsdPreview();
+}
+
+function onOsdNumberChange(configPath, rawVal, minVal, maxVal, fallback) {
+  let num = parseInt(rawVal, 10);
+  if (isNaN(num)) num = fallback;
+  num = Math.min(maxVal, Math.max(minVal, num));
+  setPropertyByPath(currentConfig, configPath, num);
+  saveConfigToStorage();
+  syncFormValues();
+  sendToAhk("SET_SETTING", { key: configPath, value: num });
+}
+
+function onOsdBorderTransparentChange(checked) {
+  updateSetting("appearance.osd.borderTransparent", !!checked);
+  updateOsdBorderControlsState();
+  updateOsdPreview();
+}
+
+function updateOsdBorderControlsState() {
+  const isTransparent = !!getPropertyByPath(currentConfig, "appearance.osd.borderTransparent");
+  const rowColor = document.getElementById("row_osd_borderColor");
+  const rowWidth = document.getElementById("row_osd_borderWidth");
+  if (rowColor) rowColor.classList.toggle("is-disabled", isTransparent);
+  if (rowWidth) rowWidth.classList.toggle("is-disabled", isTransparent);
+}
+
+function updateOsdPreview() {
+  const strip = document.getElementById("osd-preview-strip");
+  if (!strip) return;
+
+  const bgHex = getPropertyByPath(currentConfig, "appearance.osd.backgroundColor") || "#1A1A1A";
+  const bgOpacityRaw = getPropertyByPath(currentConfig, "appearance.osd.backgroundOpacity");
+  const bgOpacity = Math.min(100, Math.max(0, bgOpacityRaw !== undefined ? Number(bgOpacityRaw) : 100));
+  const textHex = getPropertyByPath(currentConfig, "appearance.osd.textColor") || "#FFFFFF";
+  const borderTransparent = !!getPropertyByPath(currentConfig, "appearance.osd.borderTransparent");
+  const borderHex = getPropertyByPath(currentConfig, "appearance.osd.borderColor") || "#3D3D3D";
+  const borderWidthRaw = getPropertyByPath(currentConfig, "appearance.osd.borderWidth");
+  const borderWidth = Math.min(10, Math.max(1, borderWidthRaw !== undefined ? Number(borderWidthRaw) : 1));
+
+  const rgb = /^#[0-9a-fA-F]{6}$/.test(bgHex) ? hexToRgb(bgHex) : { r: 26, g: 26, b: 26 };
+  const bgCss = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${(bgOpacity / 100).toFixed(2)})`;
+
+  strip.querySelectorAll(".osd-preview-pill").forEach(pill => {
+    pill.style.backgroundColor = bgCss;
+    pill.style.color = textHex;
+    pill.style.borderStyle = "solid";
+    if (borderTransparent) {
+      pill.style.borderWidth = "0px";
+      pill.style.borderColor = "transparent";
+    } else {
+      pill.style.borderWidth = `${borderWidth}px`;
+      pill.style.borderColor = borderHex;
+    }
+  });
+}
+
+function previewOsd(kind) {
+  sendToAhk("PREVIEW_OSD", { kind: kind });
 }
 
 function syncColorControl(configPath, inputId, textId, boxId) {

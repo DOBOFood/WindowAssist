@@ -121,6 +121,14 @@ class ConfigManager {
                     "windowDragPulseWidth", 3,
                     "pocketWindowBorder", "#FFDB58",
                     "pocketBorderWidth", 2
+                ),
+                "osd", Map(
+                    "backgroundColor", "#1A1A1A",
+                    "backgroundOpacity", 100,
+                    "textColor", "#FFFFFF",
+                    "borderColor", "#3D3D3D",
+                    "borderWidth", 1,
+                    "borderTransparent", false
                 )
             ),
             "workspaces", Map(

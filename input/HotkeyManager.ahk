@@ -480,6 +480,10 @@ SettingsIPCHandler(data, webInst) {
     else if (action == "STOP_KEY_RECORDING") {
         HotkeyManager.StopRecording()
     }
+    else if (action == "PREVIEW_OSD") {
+        kind := data.Has("kind") ? String(data["kind"]) : "1"
+        ShowOSD(kind)
+    }
     else if (action == "SET_SETTING") {
         if (data.Has("key") && data.Has("value")) {
             keyPath := data["key"]

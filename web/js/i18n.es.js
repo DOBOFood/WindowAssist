@@ -181,6 +181,21 @@ Object.assign(window.I18N, {
     "col_pocketWindowBorder": "Borde de las ventanas en Pocket",
     "col_pocketWindowBorder_desc": "Borde dibujado alrededor de las ventanas en Pocket",
     "col_pocketBorderWidth": "Grosor del borde de Pocket",
-    "col_pocketBorderWidth_desc": "Ancho del borde de resaltado de las ventanas en Pocket (px)"
+    "col_pocketBorderWidth_desc": "Ancho del borde de resaltado de las ventanas en Pocket (px)",
+    "groupOsdDesign": "Diseño de notificaciones de cambio (OSD)",
+    "osdPreview": "Vista previa",
+    "osdPreview_desc": "Haz clic en una insignia para mostrarla en pantalla",
+    "osdBgColor": "Color de fondo",
+    "osdBgColor_desc": "Color de relleno para notificaciones de cambio de escritorio y fijado",
+    "osdBgOpacity": "Opacidad del fondo (%)",
+    "osdBgOpacity_desc": "De 0 % (fondo transparente) a 100 % (color sólido)",
+    "osdTextColor": "Color de texto e icono",
+    "osdTextColor_desc": "Color del número de escritorio y del icono de fijado",
+    "osdBorderTransparent": "Borde transparente",
+    "osdBorderTransparent_desc": "Ocultar el contorno alrededor de la notificación",
+    "osdBorderColor": "Color del borde",
+    "osdBorderColor_desc": "Color del contorno alrededor de la notificación",
+    "osdBorderWidth": "Grosor del borde (px)",
+    "osdBorderWidth_desc": "Ancho del contorno alrededor de la notificación"
   }
 });
