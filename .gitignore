@@ -13,3 +13,6 @@ error.log*
 TODO.md
 system-backup.json
 tests/last-run.txt
+PUBLISHING.md
+# local winget manifest drafts (tools\winget-manifest.ps1)
+/winget/
