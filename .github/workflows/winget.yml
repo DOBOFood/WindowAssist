@@ -1,0 +1,23 @@
+name: Publish to WinGet
+
+# Срабатывает, когда релиз опубликован (черновик -> публикация, или пререлиз -> релиз).
+# Публикация пререлиза даёт событие `prereleased`, поэтому в winget ничего не улетает.
+on:
+  release:
+    types: [released]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send manifest to microsoft/winget-pkgs
+        uses: vedantmgoyal9/winget-releaser@main
+        with:
+          identifier: DOBOFood.WindowAssist
+          # в релизе лежит zip с portable-сборкой; по умолчанию action ищет exe/msi/msix
+          installers-regex: '\.zip$'
+          token: ${{ secrets.WINGET_TOKEN }}
