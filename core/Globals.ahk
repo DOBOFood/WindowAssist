@@ -54,5 +54,3 @@ global currentlyShownHwnd := 0
 
 global hWinEventHook      := 0
 global winEventCallback   := 0
-global hMouseHook         := 0
-global mouseEventCallback := 0

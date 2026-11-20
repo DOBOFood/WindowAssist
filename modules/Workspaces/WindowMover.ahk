@@ -430,7 +430,7 @@ MoveWindowWithMouse() {
         if (isInPocketWin)
             PocketManager.UpdateBorder(winId)
 
-        SetTimer(() => SaveState(), -300)
+        SetTimer(SaveState, -300)
     } finally {
         SnapPreview.Hide()
         isMovingOrResizing := false
@@ -661,7 +661,7 @@ ResizeWindowWithMouse() {
         if (isInPocketWin)
             PocketManager.UpdateBorder(winId)
 
-        SetTimer(() => SaveState(), -300)
+        SetTimer(SaveState, -300)
     } finally {
         isMovingOrResizing := false
     }
@@ -699,7 +699,7 @@ SaveKeyboardGeometry(winId, wx, wy, ww, wh) {
         wsWindows[winId].x := wx, wsWindows[winId].y := wy
         wsWindows[winId].w := ww, wsWindows[winId].h := wh
         SaveWindowProps(winId, wsWindows[winId])
-        SetTimer(() => SaveState(), -300)
+        SetTimer(SaveState, -300)
     }
 
     if titleBarInfo.Has(winId)

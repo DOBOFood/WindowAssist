@@ -76,10 +76,19 @@ class CaptureEngine {
         pThumbBuf := Buffer(A_PtrSize, 0)
         DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", finalW, "Int", finalH, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr", pThumbBuf)
         pBitmapResized := NumGet(pThumbBuf, 0, "Ptr")
+        if (!pBitmapResized) {
+            DllCall("gdiplus\GdipDisposeImage", "Ptr", pBitmapOrig)
+            return ""
+        }
 
         pGraphicsBuf := Buffer(A_PtrSize, 0)
         DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", pBitmapResized, "Ptr", pGraphicsBuf)
         pGraphics := NumGet(pGraphicsBuf, 0, "Ptr")
+        if (!pGraphics) {
+            DllCall("gdiplus\GdipDisposeImage", "Ptr", pBitmapResized)
+            DllCall("gdiplus\GdipDisposeImage", "Ptr", pBitmapOrig)
+            return ""
+        }
 
         DllCall("gdiplus\GdipSetInterpolationMode", "Ptr", pGraphics, "Int", 7) ; HighQualityBicubic
         DllCall("gdiplus\GdipDrawImageRectRectI", "Ptr", pGraphics, "Ptr", pBitmapOrig,
@@ -114,12 +123,16 @@ class CaptureEngine {
         if (!hIcon)
             hIcon := DllCall("GetClassLongPtr", "Ptr", hwnd, "Int", -14, "Ptr") ; GCLP_HICON
 
+        ownsIcon := false
         if (!hIcon) {
             try {
                 exePath := WinGetProcessPath("ahk_id " hwnd)
                 hIconBuf := Buffer(A_PtrSize, 0)
-                if (DllCall("shell32\ExtractIconExW", "WStr", exePath, "Int", 0, "Ptr", hIconBuf, "Ptr", 0, "UInt", 1) > 0)
+                if (DllCall("shell32\ExtractIconExW", "WStr", exePath, "Int", 0, "Ptr", hIconBuf, "Ptr", 0, "UInt", 1) > 0) {
                     hIcon := NumGet(hIconBuf, 0, "Ptr")
+                    if (hIcon)
+                        ownsIcon := true
+                }
             }
         }
 
@@ -129,7 +142,8 @@ class CaptureEngine {
         pBitmapBuf := Buffer(A_PtrSize, 0)
         DllCall("gdiplus\GdipCreateBitmapFromHICON", "Ptr", hIcon, "Ptr", pBitmapBuf)
         pBitmap := NumGet(pBitmapBuf, 0, "Ptr")
-        DllCall("DestroyIcon", "Ptr", hIcon)
+        if (ownsIcon)
+            DllCall("DestroyIcon", "Ptr", hIcon)
 
         if (!pBitmap)
             return ""
@@ -150,13 +164,23 @@ class CaptureEngine {
         if (!pStream)
             return ""
 
-        DllCall("gdiplus\GdipSaveImageToStream", "Ptr", pBitmap, "Ptr", pStream, "Ptr", clsid, "Ptr", 0)
+        status := DllCall("gdiplus\GdipSaveImageToStream", "Ptr", pBitmap, "Ptr", pStream, "Ptr", clsid, "Ptr", 0, "Int")
+        if (status != 0) {
+            ObjRelease(pStream)
+            return ""
+        }
 
         hGlobalBuf := Buffer(A_PtrSize, 0)
         DllCall("ole32\GetHGlobalFromStream", "Ptr", pStream, "Ptr", hGlobalBuf)
         hGlobal := NumGet(hGlobalBuf, 0, "Ptr")
         size := DllCall("kernel32\GlobalSize", "Ptr", hGlobal, "UPtr")
         pData := DllCall("kernel32\GlobalLock", "Ptr", hGlobal, "Ptr")
+        if (!pData || size == 0) {
+            if (pData)
+                DllCall("kernel32\GlobalUnlock", "Ptr", hGlobal)
+            ObjRelease(pStream)
+            return ""
+        }
 
         strLen := 0
         DllCall("crypt32\CryptBinaryToStringW", "Ptr", pData, "UInt", size, "UInt", 0x40000001, "Ptr", 0, "UInt*", &strLen) ; CRYPT_STRING_BASE64 | NOCRLF

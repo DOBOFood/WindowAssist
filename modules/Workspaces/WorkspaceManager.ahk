@@ -200,7 +200,7 @@ OnWindowMoveSizeEnd(hwnd) {
     }
 
     SaveWindowProps(rootHwnd, info)
-    SetTimer(() => SaveState(), -300)
+    SetTimer(SaveState, -300)
 
     if titleBarInfo.Has(rootHwnd)
         titleBarInfo[rootHwnd].boundsValid := false
@@ -760,7 +760,7 @@ SwitchWorkspace(targetMon, targetWs, preferredHwnd := 0, closeOverview := false)
         OverviewController.PushStateToWeb(targetMon)
     }
 
-    SetTimer(() => SaveState(), -200)
+    SetTimer(SaveState, -200)
 }
 
 SwitchWorkspaceDelta(delta) {
@@ -1426,9 +1426,11 @@ SaveState() {
 
     try {
         jsonStr := JSON.Dump(stateObj, "  ")
-        if FileExist(statePath)
-            FileDelete(statePath)
-        FileAppend(jsonStr, statePath, "UTF-8")
+        tempPath := statePath ".tmp"
+        if FileExist(tempPath)
+            FileDelete(tempPath)
+        FileAppend(jsonStr, tempPath, "UTF-8")
+        FileMove(tempPath, statePath, true)
     }
 }
 

@@ -2,7 +2,7 @@
 
 class WindowTracker {
     static Init() {
-        global MsgNum, hWinEventHook, winEventCallback, hMouseHook, mouseEventCallback
+        global MsgNum, hWinEventHook, winEventCallback
 
         MsgNum := DllCall("RegisterWindowMessage", "str", "SHELLHOOK")
         DllCall("RegisterShellHookWindow", "ptr", A_ScriptHwnd)
@@ -20,23 +20,16 @@ class WindowTracker {
     }
 
     static UnHook() {
-        global hWinEventHook, winEventCallback, hMouseHook, mouseEventCallback
+        global hWinEventHook, winEventCallback
         SetTimer(CheckTitleBarHover, 0)
+        try DllCall("user32\DeregisterShellHookWindow", "ptr", A_ScriptHwnd)
         if hWinEventHook {
             DllCall("UnhookWinEvent", "ptr", hWinEventHook)
             hWinEventHook := 0
         }
-        if hMouseHook {
-            DllCall("UnhookWinEvent", "ptr", hMouseHook)
-            hMouseHook := 0
-        }
         if winEventCallback {
             CallbackFree(winEventCallback)
             winEventCallback := 0
-        }
-        if mouseEventCallback {
-            CallbackFree(mouseEventCallback)
-            mouseEventCallback := 0
         }
     }
 }

@@ -9,6 +9,7 @@ class CrossWorkspaceAltTab {
     static activeIcons := []
     static targetMon := 1
     static guiBounds := {x: 0, y: 0, w: 0, h: 0}
+    static watchTimer := 0
 
     static Init() {
         Hotkey("!Tab", ObjBindMethod(this, "OnAltTab"), "On")
@@ -80,7 +81,9 @@ class CrossWorkspaceAltTab {
                 this.selectedIndex := this.entries.Length
 
             this.ShowGui()
-            SetTimer(ObjBindMethod(this, "WatchEvents"), 15)
+            if (!this.watchTimer)
+                this.watchTimer := ObjBindMethod(this, "WatchEvents")
+            SetTimer(this.watchTimer, 15)
         } else {
             count := this.entries.Length
             this.selectedIndex += direction
@@ -92,7 +95,13 @@ class CrossWorkspaceAltTab {
         }
     }
 
-    static GetHIcon(hwnd) {
+    static StopWatchTimer() {
+        if (this.watchTimer)
+            SetTimer(this.watchTimer, 0)
+    }
+
+    static GetHIcon(hwnd, &ownsIcon := false) {
+        ownsIcon := false
         if (!hwnd || !DllCall("IsWindow", "Ptr", hwnd, "Int"))
             return 0
 
@@ -110,8 +119,11 @@ class CrossWorkspaceAltTab {
             try {
                 exePath := WinGetProcessPath("ahk_id " hwnd)
                 hIconBuf := Buffer(A_PtrSize, 0)
-                if (DllCall("shell32\ExtractIconExW", "WStr", exePath, "Int", 0, "Ptr", hIconBuf, "Ptr", 0, "UInt", 1) > 0)
+                if (DllCall("shell32\ExtractIconExW", "WStr", exePath, "Int", 0, "Ptr", hIconBuf, "Ptr", 0, "UInt", 1) > 0) {
                     hIcon := NumGet(hIconBuf, 0, "Ptr")
+                    if (hIcon)
+                        ownsIcon := true
+                }
             }
         }
         return hIcon
@@ -151,13 +163,15 @@ class CrossWorkspaceAltTab {
                             if (title == "")
                                 title := WinGetProcessName("ahk_id " hwnd)
 
-                            hIcon := this.GetHIcon(hwnd)
+                            ownsIcon := false
+                            hIcon := this.GetHIcon(hwnd, &ownsIcon)
                             this.entries.Push({
                                 hwnd: hwnd,
                                 mon: info.mon,
                                 ws: info.ws,
                                 title: title,
-                                hIcon: hIcon
+                                hIcon: hIcon,
+                                ownsIcon: ownsIcon
                             })
                         }
                     }
@@ -178,13 +192,15 @@ class CrossWorkspaceAltTab {
                 if (title == "")
                     title := WinGetProcessName("ahk_id " hwnd)
 
-                hIcon := this.GetHIcon(hwnd)
+                ownsIcon := false
+                hIcon := this.GetHIcon(hwnd, &ownsIcon)
                 this.entries.Push({
                     hwnd: hwnd,
                     mon: info.mon,
                     ws: info.ws,
                     title: title,
-                    hIcon: hIcon
+                    hIcon: hIcon,
+                    ownsIcon: ownsIcon
                 })
             }
         }
@@ -229,7 +245,8 @@ class CrossWorkspaceAltTab {
             if (item.hIcon) {
                 try {
                     iconCtrl := this.guiObj.Add("Picture", "x" (xPos + (itemW - 32) // 2) " y" (gap + 30) " w32 h32 BackgroundTrans", "HICON:*" item.hIcon)
-                    this.activeIcons.Push(item.hIcon)
+                    if (item.ownsIcon)
+                        this.activeIcons.Push(item.hIcon)
                 } catch {
                     iconCtrl := 0
                 }
@@ -302,13 +319,13 @@ class CrossWorkspaceAltTab {
 
     static WatchEvents() {
         if (!this.isShowing) {
-            SetTimer(ObjBindMethod(this, "WatchEvents"), 0)
+            this.StopWatchTimer()
             return
         }
 
         ; Releasing Alt commits window selection
         if !GetKeyState("Alt", "P") {
-            SetTimer(ObjBindMethod(this, "WatchEvents"), 0)
+            this.StopWatchTimer()
             this.ExecuteSelection()
             return
         }
@@ -319,7 +336,7 @@ class CrossWorkspaceAltTab {
             MouseGetPos(&mX, &mY)
             b := this.guiBounds
             if (mX < b.x || mX > b.x + b.w || mY < b.y || mY > b.y + b.h) {
-                SetTimer(ObjBindMethod(this, "WatchEvents"), 0)
+                this.StopWatchTimer()
                 this.CleanupGui()
                 return
             }
@@ -329,7 +346,7 @@ class CrossWorkspaceAltTab {
     static SelectAndExecute(index, *) {
         if (this.isShowing) {
             this.selectedIndex := index
-            SetTimer(ObjBindMethod(this, "WatchEvents"), 0)
+            this.StopWatchTimer()
             this.ExecuteSelection()
         }
     }
@@ -347,6 +364,7 @@ class CrossWorkspaceAltTab {
     }
 
     static CleanupGui() {
+        this.StopWatchTimer()
         this.isShowing := false
         if (this.guiObj) {
             try this.guiObj.Destroy()

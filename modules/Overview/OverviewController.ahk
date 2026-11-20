@@ -357,7 +357,7 @@ class OverviewController {
                             hwndsToMove.Push(Integer(trimmed))
                     }
                 } else if IsNumber(val) {
-                    hwndsToAdd.Push(Integer(val))
+                    hwndsToMove.Push(Integer(val))
                 }
             } else if data.Has("hwnd") {
                 hwndsToMove.Push(Integer(data["hwnd"]))

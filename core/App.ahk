@@ -13,18 +13,6 @@ class App {
     static RegistryAbsent := "__absent__"
 
     static Init() {
-        global hWinEventHook, winEventCallback, hMouseHook, mouseEventCallback
-
-        if !A_IsAdmin {
-            try {
-                if A_IsCompiled
-                    Run('*RunAs "' A_ScriptFullPath '"')
-                else
-                    Run('*RunAs "' A_AhkPath '" /restart "' A_ScriptFullPath '"')
-            }
-            ExitApp()
-        }
-
         this.BackupSystemRegistry()
         this.ApplySystemRegistry()
 
@@ -55,8 +43,6 @@ class App {
     }
 
     static CleanExit(ExitReason, ExitCode) {
-        global hWinEventHook, winEventCallback, hMouseHook, mouseEventCallback
-
         WindowTracker.UnHook()
         DllCall("winmm\timeEndPeriod", "uint", 1)
         ReleaseCursorClip()

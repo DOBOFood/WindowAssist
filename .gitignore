@@ -9,6 +9,7 @@ Compiler/
 .repomixignore
 config.json
 config.json.tmp
+state.json.tmp
 error.log*
 TODO.md
 system-backup.json
