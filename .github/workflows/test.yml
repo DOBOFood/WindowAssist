@@ -16,11 +16,15 @@ jobs:
 
       - name: Install AutoHotkey v2
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          $url = "https://www.autohotkey.com/download/ahk-v2.zip"
-          Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\ahk-v2.zip"
-          Expand-Archive -Path "$env:TEMP\ahk-v2.zip" -DestinationPath "$env:TEMP\ahk-v2" -Force
-          echo "$env:TEMP\ahk-v2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          gh release download --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_2.*.zip" --dir "$env:TEMP"
+          $zip = Get-ChildItem "$env:TEMP\AutoHotkey_2.*.zip" | Select-Object -First 1
+          Expand-Archive -Path $zip.FullName -DestinationPath "$env:TEMP\ahk-v2" -Force
+          $ahkExe = Get-ChildItem "$env:TEMP\ahk-v2" -Filter "AutoHotkey64.exe" -Recurse | Select-Object -First 1
+          if (-not $ahkExe) { throw "AutoHotkey64.exe not found in archive" }
+          echo $ahkExe.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Validate main script syntax
         shell: pwsh
