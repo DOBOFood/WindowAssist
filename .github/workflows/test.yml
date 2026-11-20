@@ -1,0 +1,42 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check i18n dictionaries
+        run: node tools/check_i18n.js
+
+      - name: Install AutoHotkey v2
+        shell: pwsh
+        run: |
+          $url = "https://www.autohotkey.com/download/ahk-v2.zip"
+          Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\ahk-v2.zip"
+          Expand-Archive -Path "$env:TEMP\ahk-v2.zip" -DestinationPath "$env:TEMP\ahk-v2" -Force
+          echo "$env:TEMP\ahk-v2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Validate main script syntax
+        shell: pwsh
+        run: |
+          $p = Start-Process "AutoHotkey64.exe" -ArgumentList '/validate', '/ErrorStdOut', 'WindowAssist.ahk' -Wait -PassThru -NoNewWindow
+          exit $p.ExitCode
+
+      - name: Check generated web defaults
+        shell: pwsh
+        run: |
+          $p = Start-Process "AutoHotkey64.exe" -ArgumentList '/ErrorStdOut', 'tools\gen_defaults.ahk', 'check' -Wait -PassThru -NoNewWindow
+          exit $p.ExitCode
+
+      - name: Run unit tests
+        shell: pwsh
+        run: |
+          $p = Start-Process "AutoHotkey64.exe" -ArgumentList '/ErrorStdOut', 'tests\run.ahk' -Wait -PassThru -NoNewWindow
+          Get-Content tests\last-run.txt
+          exit $p.ExitCode
