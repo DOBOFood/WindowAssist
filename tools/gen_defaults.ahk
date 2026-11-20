@@ -31,7 +31,7 @@ content .= "window.DEFAULT_CONFIG = DEFAULT_CONFIG;`n"
 targetPath := A_ScriptDir "\..\web\js\defaults.js"
 
 if (A_Args.Length && A_Args[1] == "check") {
-    if FileExist(targetPath) && (FileRead(targetPath, "UTF-8") == content) {
+    if FileExist(targetPath) && (StrReplace(FileRead(targetPath, "UTF-8"), "`r`n", "`n") == content) {
         Say("defaults.js is up to date.")
         ExitApp(0)
     }
